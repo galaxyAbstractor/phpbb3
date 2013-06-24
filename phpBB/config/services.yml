@@ -8,6 +8,7 @@ imports:
     - { resource: auth_providers.yml }
     - { resource: console.yml }
     - { resource: mimetype_guessers.yml }
+    - { resource: controller_services.yml }
 
 services:
     acl.permissions:
