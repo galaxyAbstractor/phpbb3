@@ -1,7 +1,7 @@
 <?php
 /**
  *
- * @package entity
+ * @package api
  * @copyright (c) 2013 phpBB Group
  * @license http://opensource.org/licenses/gpl-2.0.php GNU General Public License v2
  *
@@ -16,7 +16,7 @@ if (!defined('IN_PHPBB'))
 }
 
 /**
- * Forum enitity
+ * Forum model
  * @package phpBB3
  */
 class phpbb_model_api_forum
@@ -71,7 +71,7 @@ class phpbb_model_api_forum
 	 */
 	public function add_subforum($forum, $forums)
 	{
-		for ($i = 0; $i < count($forums);$i++)
+		for ($i = 0; $i < count($forums); $i++)
 		{
 			if ($forums[$i]->get('forum_id') == $forum->get('parent_id'))
 			{
