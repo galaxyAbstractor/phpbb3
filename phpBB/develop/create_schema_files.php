@@ -1418,6 +1418,7 @@ function get_schema_struct()
 			'post_delete_time'		=> array('TIMESTAMP', 0),
 			'post_delete_reason'	=> array('STEXT_UNI', ''),
 			'post_delete_user'		=> array('UINT', 0),
+			'post_api_post'		=> array('BOOL', 0),
 		),
 		'PRIMARY_KEY'	=> 'post_id',
 		'KEYS'			=> array(
