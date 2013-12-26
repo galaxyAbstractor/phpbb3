@@ -64,7 +64,7 @@ class ucp_zebra
 						* @var	array	user_ids	User ids we remove
 						* @since 3.1-A1
 						*/
-						$vars = array('user_ids');
+						$vars = array('mode', 'user_ids');
 						extract($phpbb_dispatcher->trigger_event('core.ucp_remove_zebra', compact($vars)));
 
 						$sql = 'DELETE FROM ' . ZEBRA_TABLE . '
@@ -229,7 +229,7 @@ class ucp_zebra
 					{
 						$message = ($updated) ? $user->lang[$l_mode . '_UPDATED'] : implode('<br />', $error);
 						
-						$json_response = new phpbb_json_response;
+						$json_response = new \phpbb\json_response;
 						$json_response->send(array(
 							'success' => $updated,
 							

@@ -7,17 +7,11 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\cache\driver;
 
 /**
 * @package acm
 */
-abstract class phpbb_cache_driver_base implements phpbb_cache_driver_interface
+abstract class base implements \phpbb\cache\driver\driver_interface
 {
 }

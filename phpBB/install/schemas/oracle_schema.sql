@@ -967,6 +967,34 @@ END;
 
 
 /*
+	Table: 'phpbb_oauth_accounts'
+*/
+CREATE TABLE phpbb_oauth_accounts (
+	user_id number(8) DEFAULT '0' NOT NULL,
+	provider varchar2(255) DEFAULT '' ,
+	oauth_provider_id clob DEFAULT '' ,
+	CONSTRAINT pk_phpbb_oauth_accounts PRIMARY KEY (user_id, provider)
+)
+/
+
+
+/*
+	Table: 'phpbb_oauth_tokens'
+*/
+CREATE TABLE phpbb_oauth_tokens (
+	user_id number(8) DEFAULT '0' NOT NULL,
+	session_id char(32) DEFAULT '' ,
+	provider varchar2(255) DEFAULT '' ,
+	oauth_token clob DEFAULT '' 
+)
+/
+
+CREATE INDEX phpbb_oauth_tokens_user_id ON phpbb_oauth_tokens (user_id)
+/
+CREATE INDEX phpbb_oauth_tokens_provider ON phpbb_oauth_tokens (provider)
+/
+
+/*
 	Table: 'phpbb_poll_options'
 */
 CREATE TABLE phpbb_poll_options (

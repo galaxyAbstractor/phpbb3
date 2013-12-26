@@ -7,20 +7,14 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\hook;
 
 /**
 * The hook finder locates installed hooks.
 *
 * @package phpBB3
 */
-class phpbb_hook_finder
+class finder
 {
 	protected $phpbb_root_path;
 	protected $cache;
@@ -31,9 +25,9 @@ class phpbb_hook_finder
 	*
 	* @param string $phpbb_root_path Path to the phpbb root directory
 	* @param string $php_ext php file extension
-	* @param phpbb_cache_driver_interface $cache A cache instance or null
+	* @param \phpbb\cache\driver\driver_interface $cache A cache instance or null
 	*/
-	public function __construct($phpbb_root_path, $php_ext, phpbb_cache_driver_interface $cache = null)
+	public function __construct($phpbb_root_path, $php_ext, \phpbb\cache\driver\driver_interface $cache = null)
 	{
 		$this->phpbb_root_path = $phpbb_root_path;
 		$this->cache = $cache;

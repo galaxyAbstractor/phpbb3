@@ -55,7 +55,6 @@ class acp_forums
 				$total = request_var('total', 0);
 
 				$this->display_progress_bar($start, $total);
-				exit;
 			break;
 
 			case 'delete':
@@ -269,7 +268,7 @@ class acp_forums
 
 				if ($request->is_ajax())
 				{
-					$json_response = new phpbb_json_response;
+					$json_response = new \phpbb\json_response;
 					$json_response->send(array('success' => ($move_forum_name !== false)));
 				}
 
@@ -1471,7 +1470,7 @@ class acp_forums
 		/**
 		* Event when we move content from one forum to another
 		*
-		* @event core.acp_manage_forums_move_children
+		* @event core.acp_manage_forums_move_content
 		* @var	int		from_id		If of the current parent forum
 		* @var	int		to_id		If of the new parent forum
 		* @var	bool	sync		Shall we sync the "to"-forum's data

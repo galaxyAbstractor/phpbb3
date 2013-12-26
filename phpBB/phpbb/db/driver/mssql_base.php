@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\db\driver;
 
 /**
 * MSSQL Database Base Abstraction Layer
 * @package dbal
  */
-abstract class phpbb_db_driver_mssql_base extends phpbb_db_driver
+abstract class mssql_base extends \phpbb\db\driver\driver
 {
 	/**
 	* {@inheritDoc}

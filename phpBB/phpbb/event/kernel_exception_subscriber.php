@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\event;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -21,27 +15,27 @@ use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpFoundation\Response;
 
-class phpbb_event_kernel_exception_subscriber implements EventSubscriberInterface
+class kernel_exception_subscriber implements EventSubscriberInterface
 {
 	/**
 	* Template object
-	* @var phpbb_template
+	* @var \phpbb\template\template
 	*/
 	protected $template;
 
 	/**
 	* User object
-	* @var phpbb_user
+	* @var \phpbb\user
 	*/
 	protected $user;
 
 	/**
 	* Construct method
 	*
-	* @param phpbb_template $template Template object
-	* @param phpbb_user $user User object
+	* @param \phpbb\template\template $template Template object
+	* @param \phpbb\user $user User object
 	*/
-	public function __construct(phpbb_template $template, phpbb_user $user)
+	public function __construct(\phpbb\template\template $template, \phpbb\user $user)
 	{
 		$this->template = $template;
 		$this->user = $user;
@@ -69,7 +63,6 @@ class phpbb_event_kernel_exception_subscriber implements EventSubscriberInterfac
 		));
 
 		page_footer(true, false, false);
-
 
 		$status_code = $exception instanceof HttpException ? $exception->getStatusCode() : 500;
 		$response = new Response($this->template->assign_display('body'), $status_code);

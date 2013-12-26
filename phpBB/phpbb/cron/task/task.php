@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\cron\task;
 
 /**
 * Cron task interface
 * @package phpBB3
 */
-interface phpbb_cron_task
+interface task
 {
 	/**
 	* Returns the name of the task.

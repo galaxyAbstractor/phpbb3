@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\db\driver;
 
 /**
 * MySQL4 Database Abstraction Layer
@@ -24,7 +18,7 @@ if (!defined('IN_PHPBB'))
 * MySQL 5.0+
 * @package dbal
 */
-class phpbb_db_driver_mysql extends phpbb_db_driver_mysql_base
+class mysql extends \phpbb\db\driver\mysql_base
 {
 	var $multi_insert = true;
 	var $connect_error = '';
@@ -287,7 +281,7 @@ class phpbb_db_driver_mysql extends phpbb_db_driver_mysql_base
 			$query_id = $this->query_result;
 		}
 
-		if ($cache && $cache->sql_exists($query_id))
+		if ($cache && !is_object($query_id) && $cache->sql_exists($query_id))
 		{
 			return $cache->sql_freeresult($query_id);
 		}

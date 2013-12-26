@@ -7,16 +7,10 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\template\twig\tokenparser;
 
 
-class phpbb_template_twig_tokenparser_includephp extends Twig_TokenParser
+class includephp extends \Twig_TokenParser
 {
 	/**
 	 * Parses a token and returns a node.
@@ -25,23 +19,23 @@ class phpbb_template_twig_tokenparser_includephp extends Twig_TokenParser
 	 *
 	 * @return Twig_NodeInterface A Twig_NodeInterface instance
 	 */
-	public function parse(Twig_Token $token)
+	public function parse(\Twig_Token $token)
 	{
 		$expr = $this->parser->getExpressionParser()->parseExpression();
 
 		$stream = $this->parser->getStream();
 
 		$ignoreMissing = false;
-		if ($stream->test(Twig_Token::NAME_TYPE, 'ignore')) {
+		if ($stream->test(\Twig_Token::NAME_TYPE, 'ignore')) {
 			$stream->next();
-			$stream->expect(Twig_Token::NAME_TYPE, 'missing');
+			$stream->expect(\Twig_Token::NAME_TYPE, 'missing');
 
 			$ignoreMissing = true;
 		}
 
-		$stream->expect(Twig_Token::BLOCK_END_TYPE);
+		$stream->expect(\Twig_Token::BLOCK_END_TYPE);
 
-		return new phpbb_template_twig_node_includephp($expr, $this->parser->getEnvironment(), $ignoreMissing, $token->getLine(), $this->getTag());
+		return new \phpbb\template\twig\node\includephp($expr, $this->parser->getEnvironment(), $token->getLine(), $ignoreMissing, $this->getTag());
 	}
 
 	/**

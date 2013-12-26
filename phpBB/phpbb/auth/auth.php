@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\auth;
 
 /**
 * Permission/Auth class
 * @package phpBB3
 */
-class phpbb_auth
+class auth
 {
 	var $acl = array();
 	var $cache = array();
@@ -968,6 +962,18 @@ class phpbb_auth
 					'error_msg'	=> false,
 					'user_row'	=> $row,
 				);
+			}
+
+			// If the auth provider wants us to link an empty account do so and redirect
+			if ($login['status'] == LOGIN_SUCCESS_LINK_PROFILE)
+			{
+				// If this status exists a fourth field is in the $login array called 'redirect_data'
+				// This data is passed along as GET data to the next page allow the account to be linked
+
+				$params = array('mode' => 'login_link');
+				$url = append_sid($phpbb_root_path . 'ucp.' . $phpEx, array_merge($params, $login['redirect_data']));
+
+				redirect($url);
 			}
 
 			// If login succeeded, we will log the user in... else we pass the login array through...

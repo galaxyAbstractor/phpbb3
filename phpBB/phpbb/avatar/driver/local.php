@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\avatar\driver;
 
 /**
 * Handles avatars selected from the board gallery
 * @package phpBB3
 */
-class phpbb_avatar_driver_local extends phpbb_avatar_driver
+class local extends \phpbb\avatar\driver\driver
 {
 	/**
 	* @inheritdoc
@@ -27,7 +21,7 @@ class phpbb_avatar_driver_local extends phpbb_avatar_driver
 	public function get_data($row)
 	{
 		return array(
-			'src' => $this->phpbb_root_path . $this->config['avatar_gallery_path'] . '/' . $row['avatar'],
+			'src' => $this->path_helper->get_web_root_path() . $this->config['avatar_gallery_path'] . '/' . $row['avatar'],
 			'width' => $row['avatar_width'],
 			'height' => $row['avatar_height'],
 		);
@@ -141,10 +135,18 @@ class phpbb_avatar_driver_local extends phpbb_avatar_driver
 	}
 
 	/**
+	* @inheritdoc
+	*/
+	public function get_template_name()
+	{
+		return 'ucp_avatar_options_local.html';
+	}
+
+	/**
 	* Get a list of avatars that are locally available
 	* Results get cached for 24 hours (86400 seconds)
 	*
-	* @param phpbb_user $user User object
+	* @param \phpbb\user $user User object
 	*
 	* @return array Array containing the locally available avatars
 	*/
@@ -157,7 +159,7 @@ class phpbb_avatar_driver_local extends phpbb_avatar_driver
 			$avatar_list = array();
 			$path = $this->phpbb_root_path . $this->config['avatar_gallery_path'];
 
-			$iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS | FilesystemIterator::UNIX_PATHS), RecursiveIteratorIterator::SELF_FIRST);
+			$iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::UNIX_PATHS), \RecursiveIteratorIterator::SELF_FIRST);
 			foreach ($iterator as $file_info)
 			{
 				$file_path = $file_info->getPath();

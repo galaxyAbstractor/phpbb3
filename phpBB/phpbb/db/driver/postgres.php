@@ -7,20 +7,14 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\db\driver;
 
 /**
 * PostgreSQL Database Abstraction Layer
 * Minimum Requirement is Version 7.3+
 * @package dbal
 */
-class phpbb_db_driver_postgres extends phpbb_db_driver
+class postgres extends \phpbb\db\driver\driver
 {
 	var $last_query_text = '';
 	var $connect_error = '';
@@ -84,7 +78,7 @@ class phpbb_db_driver_postgres extends phpbb_db_driver
 				$this->connect_error = 'pg_pconnect function does not exist, is pgsql extension installed?';
 				return $this->sql_error('');
 			}
-			$collector = new phpbb_error_collector;
+			$collector = new \phpbb\error_collector;
 			$collector->install();
 			$this->db_connect_id = (!$new_link) ? @pg_pconnect($connect_string) : @pg_pconnect($connect_string, PGSQL_CONNECT_FORCE_NEW);
 		}
@@ -95,7 +89,7 @@ class phpbb_db_driver_postgres extends phpbb_db_driver
 				$this->connect_error = 'pg_connect function does not exist, is pgsql extension installed?';
 				return $this->sql_error('');
 			}
-			$collector = new phpbb_error_collector;
+			$collector = new \phpbb\error_collector;
 			$collector->install();
 			$this->db_connect_id = (!$new_link) ? @pg_connect($connect_string) : @pg_connect($connect_string, PGSQL_CONNECT_FORCE_NEW);
 		}
@@ -326,7 +320,7 @@ class phpbb_db_driver_postgres extends phpbb_db_driver
 					return false;
 				}
 
-				$temp_result = @pg_fetch_assoc($temp_q_id, NULL);
+				$temp_result = @pg_fetch_assoc($temp_q_id, null);
 				@pg_free_result($query_id);
 
 				return ($temp_result) ? $temp_result['last_value'] : false;
@@ -348,7 +342,7 @@ class phpbb_db_driver_postgres extends phpbb_db_driver
 			$query_id = $this->query_result;
 		}
 
-		if ($cache && $cache->sql_exists($query_id))
+		if ($cache && !is_object($query_id) && $cache->sql_exists($query_id))
 		{
 			return $cache->sql_freeresult($query_id);
 		}
@@ -454,7 +448,7 @@ class phpbb_db_driver_postgres extends phpbb_db_driver
 
 					if ($result = @pg_query($this->db_connect_id, "EXPLAIN $explain_query"))
 					{
-						while ($row = @pg_fetch_assoc($result, NULL))
+						while ($row = @pg_fetch_assoc($result, null))
 						{
 							$html_table = $this->sql_report('add_select_row', $query, $html_table, $row);
 						}
@@ -474,7 +468,7 @@ class phpbb_db_driver_postgres extends phpbb_db_driver
 				$endtime = $endtime[0] + $endtime[1];
 
 				$result = @pg_query($this->db_connect_id, $query);
-				while ($void = @pg_fetch_assoc($result, NULL))
+				while ($void = @pg_fetch_assoc($result, null))
 				{
 					// Take the time spent on parsing rows into account
 				}

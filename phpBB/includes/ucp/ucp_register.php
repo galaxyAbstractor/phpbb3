@@ -27,7 +27,7 @@ class ucp_register
 	function main($id, $mode)
 	{
 		global $config, $db, $user, $auth, $template, $phpbb_root_path, $phpEx;
-		global $request;
+		global $request, $phpbb_container;
 
 		//
 		if ($config['require_activation'] == USER_ACTIVATION_DISABLE)
@@ -78,19 +78,37 @@ class ucp_register
 			}
 		}
 
-
 		$cp = new custom_profile();
 
 		$error = $cp_data = $cp_error = array();
+		$s_hidden_fields = array();
+
+		// Handle login_link data added to $_hidden_fields
+		$login_link_data = $this->get_login_link_data_array();
+
+		if (!empty($login_link_data))
+		{
+			// Confirm that we have all necessary data
+			$auth_provider = 'auth.provider.' . $request->variable('auth_provider', $config['auth_method']);
+			$auth_provider = $phpbb_container->get($auth_provider);
+
+			$result = $auth_provider->login_link_has_necessary_data($login_link_data);
+			if ($result !== null)
+			{
+				$error[] = $user->lang[$result];
+			}
+
+			$s_hidden_fields = array_merge($s_hidden_fields, $this->get_login_link_data_for_hidden_fields($login_link_data));
+		}
 
 		if (!$agreed || ($coppa === false && $config['coppa_enable']) || ($coppa && !$config['coppa_enable']))
 		{
 			$add_lang = ($change_lang) ? '&amp;change_lang=' . urlencode($change_lang) : '';
 			$add_coppa = ($coppa !== false) ? '&amp;coppa=' . $coppa : '';
 
-			$s_hidden_fields = array(
+			$s_hidden_fields = array_merge($s_hidden_fields, array(
 				'change_lang'	=> '',
-			);
+			));
 
 			// If we change the language, we want to pass on some more possible parameter.
 			if ($change_lang)
@@ -361,40 +379,28 @@ class ucp_register
 					}
 
 					$messenger->send(NOTIFY_EMAIL);
+				}
 
-					if ($config['require_activation'] == USER_ACTIVATION_ADMIN)
+				if ($config['require_activation'] == USER_ACTIVATION_ADMIN)
+				{
+					$phpbb_notifications = $phpbb_container->get('notification_manager');
+					$phpbb_notifications->add_notifications('admin_activate_user', array(
+						'user_id'		=> $user_id,
+						'user_actkey'	=> $user_row['user_actkey'],
+						'user_regdate'	=> $user_row['user_regdate'],
+					));
+				}
+
+				// Perform account linking if necessary
+				if (!empty($login_link_data))
+				{
+					$login_link_data['user_id'] = $user_id;
+
+					$result = $auth_provider->link_account($login_link_data);
+
+					if ($result)
 					{
-						// Grab an array of user_id's with a_user permissions ... these users can activate a user
-						$admin_ary = $auth->acl_get_list(false, 'a_user', false);
-						$admin_ary = (!empty($admin_ary[0]['a_user'])) ? $admin_ary[0]['a_user'] : array();
-
-						// Also include founders
-						$where_sql = ' WHERE user_type = ' . USER_FOUNDER;
-
-						if (sizeof($admin_ary))
-						{
-							$where_sql .= ' OR ' . $db->sql_in_set('user_id', $admin_ary);
-						}
-
-						$sql = 'SELECT user_id, username, user_email, user_lang, user_jabber, user_notify_type
-							FROM ' . USERS_TABLE . ' ' .
-							$where_sql;
-						$result = $db->sql_query($sql);
-
-						while ($row = $db->sql_fetchrow($result))
-						{
-							$messenger->template('admin_activate', $row['user_lang']);
-							$messenger->set_addresses($row);
-
-							$messenger->assign_vars(array(
-								'USERNAME'			=> htmlspecialchars_decode($data['username']),
-								'U_USER_DETAILS'	=> "$server_url/memberlist.$phpEx?mode=viewprofile&u=$user_id",
-								'U_ACTIVATE'		=> "$server_url/ucp.$phpEx?mode=activate&u=$user_id&k=$user_actkey")
-							);
-
-							$messenger->send($row['user_notify_type']);
-						}
-						$db->sql_freeresult($result);
+						$message = $message . '<br /><br />' . $user->lang[$result];
 					}
 				}
 
@@ -403,10 +409,10 @@ class ucp_register
 			}
 		}
 
-		$s_hidden_fields = array(
+		$s_hidden_fields = array_merge($s_hidden_fields, array(
 			'agreed'		=> 'true',
 			'change_lang'	=> 0,
-		);
+		));
 
 		if ($config['coppa_enable'])
 		{
@@ -473,5 +479,50 @@ class ucp_register
 		//
 		$this->tpl_name = 'ucp_register';
 		$this->page_title = 'UCP_REGISTRATION';
+	}
+
+	/**
+	* Creates the login_link data array
+	*
+	* @return	array	Returns an array of all POST paramaters whose names
+	*					begin with 'login_link_'
+	*/
+	protected function get_login_link_data_array()
+	{
+		global $request;
+
+		$var_names = $request->variable_names(\phpbb\request\request_interface::POST);
+		$login_link_data = array();
+		$string_start_length = strlen('login_link_');
+
+		foreach ($var_names as $var_name)
+		{
+			if (strpos($var_name, 'login_link_') === 0)
+			{
+				$key_name = substr($var_name, $string_start_length);
+				$login_link_data[$key_name] = $request->variable($var_name, '', false, \phpbb\request\request_interface::POST);
+			}
+		}
+
+		return $login_link_data;
+	}
+
+	/**
+	* Prepends they key names of an associative array with 'login_link_' for
+	* inclusion on the page as hidden fields.
+	*
+	* @param	array	$data	The array to be modified
+	* @return	array	The modified array
+	*/
+	protected function get_login_link_data_for_hidden_fields($data)
+	{
+		$new_data = array();
+
+		foreach ($data as $key => $value)
+		{
+			$new_data['login_link_' . $key] = $value;
+		}
+
+		return $new_data;
 	}
 }

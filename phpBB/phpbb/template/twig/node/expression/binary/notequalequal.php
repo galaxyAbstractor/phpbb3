@@ -7,18 +7,12 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\template\twig\node\expression\binary;
 
 
-class phpbb_template_twig_node_expression_binary_notequalequal extends Twig_Node_Expression_Binary
+class notequalequal extends \Twig_Node_Expression_Binary
 {
-	public function operator(Twig_Compiler $compiler)
+	public function operator(\Twig_Compiler $compiler)
 	{
 		return $compiler->raw('!==');
 	}

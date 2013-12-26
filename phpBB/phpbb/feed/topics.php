@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\feed;
 
 /**
 * New Topics feed
@@ -23,7 +17,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package phpBB3
 */
-class phpbb_feed_topics extends phpbb_feed_topic_base
+class topics extends \phpbb\feed\topic_base
 {
 	function get_sql()
 	{

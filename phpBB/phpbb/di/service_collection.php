@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\di;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -22,7 +16,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 *
 * @package phpBB3
 */
-class phpbb_di_service_collection extends ArrayObject
+class service_collection extends \ArrayObject
 {
 	/**
 	* Constructor

@@ -22,17 +22,25 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 			->will($this->returnArgument(0));
 
 		// Prepare dependencies for avatar manager and driver
-		$config = new phpbb_config(array());
-		$request = $this->getMock('phpbb_request');
-		$cache = $this->getMock('phpbb_cache_driver_interface');
+		$config = new \phpbb\config\config(array());
+		$request = $this->getMock('\phpbb\request\request');
+		$cache = $this->getMock('\phpbb\cache\driver\driver_interface');
+		$path_helper =  new \phpbb\path_helper(
+			new \phpbb\symfony_request(
+				new phpbb_mock_request()
+			),
+			new \phpbb\filesystem(),
+			$this->phpbb_root_path,
+			$this->phpEx
+		);
 
 		// $this->avatar_foobar will be needed later on
-		$this->avatar_foobar = $this->getMock('phpbb_avatar_driver_foobar', array('get_name'), array($config, $phpbb_root_path, $phpEx, $cache));
+		$this->avatar_foobar = $this->getMock('\phpbb\avatar\driver\foobar', array('get_name'), array($config, $phpbb_root_path, $phpEx, $path_helper, $cache));
 		$this->avatar_foobar->expects($this->any())
 			->method('get_name')
 			->will($this->returnValue('avatar.driver.foobar'));
 		// barfoo driver can't be mocked with constructor arguments
-		$this->avatar_barfoo = $this->getMock('phpbb_avatar_driver_barfoo', array('get_name'));
+		$this->avatar_barfoo = $this->getMock('\phpbb\avatar\driver\barfoo', array('get_name'));
 		$this->avatar_barfoo->expects($this->any())
 			->method('get_name')
 			->will($this->returnValue('avatar.driver.barfoo'));
@@ -40,7 +48,7 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 
 		foreach ($this->avatar_drivers() as $driver)
 		{
-			$cur_avatar = $this->getMock('phpbb_avatar_driver_' . $driver, array('get_name'), array($config, $phpbb_root_path, $phpEx, $cache));
+			$cur_avatar = $this->getMock('\phpbb\avatar\driver\\' . $driver, array('get_name'), array($config, $phpbb_root_path, $phpEx, $path_helper, $cache));
 			$cur_avatar->expects($this->any())
 				->method('get_name')
 				->will($this->returnValue('avatar.driver.' . $driver));
@@ -52,7 +60,7 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 		$config['allow_avatar_' . get_class($this->avatar_barfoo)] = false;
 
 		// Set up avatar manager
-		$this->manager = new phpbb_avatar_manager($config, $avatar_drivers, $this->phpbb_container);
+		$this->manager = new \phpbb\avatar\manager($config, $avatar_drivers, $this->phpbb_container);
 	}
 
 	protected function avatar_drivers()
@@ -104,7 +112,7 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 	public function test_get_driver_enabled($driver_name, $expected)
 	{
 		$driver = $this->manager->get_driver($driver_name);
-		$this->assertEquals($expected, $driver);
+		$this->assertEquals($expected, ($driver === null) ? null : $driver->get_name());
 	}
 
 	public function get_driver_data_all()
@@ -125,7 +133,7 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 	public function test_get_driver_all($driver_name, $expected)
 	{
 		$driver = $this->manager->get_driver($driver_name, false);
-		$this->assertEquals($expected, $driver);
+		$this->assertEquals($expected, ($driver === null) ? $driver : $driver->get_name());
 	}
 
 	public function test_get_avatar_settings()
@@ -144,31 +152,20 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 		return array(
 			array(
 				array(
-					'user_avatar'			=> '',
-					'user_avatar_type'		=> '',
-					'user_avatar_width'		=> '',
+					'user_avatar'		=> '',
+					'user_avatar_type'	=> '',
+					'user_avatar_width'	=> '',
 					'user_avatar_height'	=> '',
+					'group_avatar'		=> '',
 				),
 				array(
-					'avatar'			=> '',
-					'avatar_type'		=> '',
-					'avatar_width'		=> '',
-					'avatar_height'		=> '',
+					'user_avatar'		=> '',
+					'user_avatar_type'	=> '',
+					'user_avatar_width'	=> '',
+					'user_avatar_height'	=> '',
+					'group_avatar'		=> '',
 				),
-			),
-			array(
-				array(
-					'group_avatar'			=> '',
-					'group_avatar_type'		=> '',
-					'group_avatar_width'	=> '',
-					'group_avatar_height'	=> '',
-				),
-				array(
-					'avatar'			=> '',
-					'avatar_type'		=> '',
-					'avatar_width'		=> '',
-					'avatar_height'		=> '',
-				),
+				'foobar',
 			),
 			array(
 				array(),
@@ -181,17 +178,41 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 			),
 			array(
 				array(
-					'foobar_avatar'			=> '',
-					'foobar_avatar_type'	=> '',
-					'foobar_avatar_width'	=> '',
-					'foobar_avatar_height'	=> '',
+					'user_avatar'	=> '',
+					'user_id'	=> 5,
+					'group_id'	=> 4,
 				),
 				array(
-					'foobar_avatar'			=> '',
-					'foobar_avatar_type'	=> '',
-					'foobar_avatar_width'	=> '',
-					'foobar_avatar_height'	=> '',
+					'user_avatar'	=> '',
+					'user_id'	=> 5,
+					'group_id'	=> 4,
 				),
+			),
+			array(
+				array(
+					'user_avatar'	=> '',
+					'user_id'	=> 5,
+					'group_id'	=> 4,
+				),
+				array(
+					'avatar'	=> '',
+					'id'		=> 5,
+					'group_id'	=> 4,
+				),
+				'user',
+			),
+			array(
+				array(
+					'group_avatar'	=> '',
+					'user_id'	=> 5,
+					'group_id'	=> 4,
+				),
+				array(
+					'avatar'	=> '',
+					'id'		=> 'g4',
+					'user_id'	=> 5,
+				),
+				'group',
 			),
 		);
 	}
@@ -199,14 +220,15 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 	/**
 	* @dataProvider database_row_data
 	*/
-	public function test_clean_row(array $input, array $output)
+	public function test_clean_row(array $input, array $output, $prefix = '')
 	{
 		$cleaned_row = array();
 
-		$cleaned_row = phpbb_avatar_manager::clean_row($input);
-		foreach ($output as $key => $null)
+		$cleaned_row = \phpbb\avatar\manager::clean_row($input, $prefix);
+		foreach ($output as $key => $value)
 		{
 			$this->assertArrayHasKey($key, $cleaned_row);
+			$this->assertEquals($cleaned_row[$key], $value);
 		}
 	}
 
@@ -222,7 +244,7 @@ class phpbb_avatar_manager_test extends PHPUnit_Framework_TestCase
 
 	public function test_localize_errors()
 	{
-		$user = $this->getMock('phpbb_user');
+		$user = $this->getMock('\phpbb\user');
 		$lang_array = array(
 			array('FOOBAR_OFF', 'foobar_off'),
 			array('FOOBAR_EXPLAIN', 'FOOBAR_EXPLAIN %s'),

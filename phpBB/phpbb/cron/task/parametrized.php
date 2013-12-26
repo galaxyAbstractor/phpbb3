@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\cron\task;
 
 /**
 * Parametrized cron task interface.
@@ -26,7 +20,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package phpBB3
 */
-interface phpbb_cron_task_parametrized extends phpbb_cron_task
+interface parametrized extends \phpbb\cron\task\task
 {
 	/**
 	* Returns parameters of this cron task as an array.
@@ -39,14 +33,14 @@ interface phpbb_cron_task_parametrized extends phpbb_cron_task
 
 	/**
 	* Parses parameters found in $request, which is an instance of
-	* phpbb_request_interface.
+	* \phpbb\request\request_interface.
 	*
 	* $request contains user input and must not be trusted.
 	* Cron task must validate all data before using it.
 	*
-	* @param phpbb_request_interface $request Request object.
+	* @param \phpbb\request\request_interface $request Request object.
 	*
 	* @return null
 	*/
-	public function parse_parameters(phpbb_request_interface $request);
+	public function parse_parameters(\phpbb\request\request_interface $request);
 }

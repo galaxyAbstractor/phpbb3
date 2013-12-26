@@ -7,28 +7,22 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\db;
 
 /**
 * The migrator is responsible for applying new migrations in the correct order.
 *
 * @package db
 */
-class phpbb_db_migrator
+class migrator
 {
-	/** @var phpbb_config */
+	/** @var \phpbb\config\config */
 	protected $config;
 
-	/** @var phpbb_db_driver */
+	/** @var \phpbb\db\driver\driver */
 	protected $db;
 
-	/** @var phpbb_db_tools */
+	/** @var \phpbb\db\tools */
 	protected $db_tools;
 
 	/** @var string */
@@ -71,7 +65,7 @@ class phpbb_db_migrator
 	/**
 	* Constructor of the database migrator
 	*/
-	public function __construct(phpbb_config $config, phpbb_db_driver $db, phpbb_db_tools $db_tools, $migrations_table, $phpbb_root_path, $php_ext, $table_prefix, $tools)
+	public function __construct(\phpbb\config\config $config, \phpbb\db\driver\driver $db, \phpbb\db\tools $db_tools, $migrations_table, $phpbb_root_path, $php_ext, $table_prefix, $tools)
 	{
 		$this->config = $config;
 		$this->db = $db;
@@ -190,6 +184,11 @@ class phpbb_db_migrator
 
 		foreach ($state['migration_depends_on'] as $depend)
 		{
+			if ($this->unfulfillable($depend) !== false)
+			{
+				throw new \phpbb\db\migration\exception('MIGRATION_NOT_FULFILLABLE', $name, $depend);
+			}
+
 			if (!isset($this->migration_state[$depend]) ||
 				!$this->migration_state[$depend]['migration_schema_done'] ||
 				!$this->migration_state[$depend]['migration_data_done'])
@@ -202,11 +201,12 @@ class phpbb_db_migrator
 			'name'	=> $name,
 			'class'	=> $migration,
 			'state'	=> $state,
+			'task'	=> '',
 		);
 
 		if (!isset($this->migration_state[$name]))
 		{
-			if ($migration->effectively_installed())
+			if ($state['migration_start_time'] == 0 && $migration->effectively_installed())
 			{
 				$state = array(
 					'migration_depends_on'	=> $migration->depends_on(),
@@ -225,8 +225,11 @@ class phpbb_db_migrator
 			}
 		}
 
+		$this->set_migration_state($name, $state);
+
 		if (!$state['migration_schema_done'])
 		{
+			$this->last_run_migration['task'] = 'apply_schema_changes';
 			$this->apply_schema_changes($migration->update_schema());
 			$state['migration_schema_done'] = true;
 		}
@@ -234,13 +237,14 @@ class phpbb_db_migrator
 		{
 			try
 			{
+				$this->last_run_migration['task'] = 'process_data_step';
 				$result = $this->process_data_step($migration->update_data(), $state['migration_data_state']);
 
 				$state['migration_data_state'] = ($result === true) ? '' : $result;
 				$state['migration_data_done'] = ($result === true);
 				$state['migration_end_time'] = ($result === true) ? time() : 0;
 			}
-			catch (phpbb_db_migration_exception $e)
+			catch (\phpbb\db\migration\exception $e)
 			{
 				// Revert the schema changes
 				$this->revert($name);
@@ -304,6 +308,7 @@ class phpbb_db_migrator
 		$this->last_run_migration = array(
 			'name'	=> $name,
 			'class'	=> $migration,
+			'task'	=> '',
 		);
 
 		if ($state['migration_data_done'])
@@ -370,7 +375,7 @@ class phpbb_db_migrator
 
 		foreach ($steps as $step_identifier => $step)
 		{
-			$last_result = false;
+			$last_result = 0;
 			if ($state)
 			{
 				// Continue until we reach the step that matches the last step called
@@ -398,7 +403,7 @@ class phpbb_db_migrator
 					));
 				}
 			}
-			catch (phpbb_db_migration_exception $e)
+			catch (\phpbb\db\migration\exception $e)
 			{
 				// We should try rolling back here
 				foreach ($steps as $reverse_step_identifier => $reverse_step)
@@ -431,7 +436,7 @@ class phpbb_db_migrator
 	* @param bool $reverse False to install, True to attempt uninstallation by reversing the call
 	* @return null
 	*/
-	protected function run_step($step, $last_result = false, $reverse = false)
+	protected function run_step($step, $last_result = 0, $reverse = false)
 	{
 		$callable_and_parameters = $this->get_callable_from_step($step, $last_result, $reverse);
 
@@ -454,7 +459,7 @@ class phpbb_db_migrator
 	* @param bool $reverse False to install, True to attempt uninstallation by reversing the call
 	* @return array Array with parameters for call_user_func_array(), 0 is the callable, 1 is parameters
 	*/
-	protected function get_callable_from_step(array $step, $last_result = false, $reverse = false)
+	protected function get_callable_from_step(array $step, $last_result = 0, $reverse = false)
 	{
 		$type = $step[0];
 		$parameters = $step[1];
@@ -474,12 +479,12 @@ class phpbb_db_migrator
 			case 'if':
 				if (!isset($parameters[0]))
 				{
-					throw new phpbb_db_migration_exception('MIGRATION_INVALID_DATA_MISSING_CONDITION', $step);
+					throw new \phpbb\db\migration\exception('MIGRATION_INVALID_DATA_MISSING_CONDITION', $step);
 				}
 
 				if (!isset($parameters[1]))
 				{
-					throw new phpbb_db_migration_exception('MIGRATION_INVALID_DATA_MISSING_STEP', $step);
+					throw new \phpbb\db\migration\exception('MIGRATION_INVALID_DATA_MISSING_STEP', $step);
 				}
 
 				$condition = $parameters[0];
@@ -496,7 +501,7 @@ class phpbb_db_migrator
 			case 'custom':
 				if (!is_callable($parameters[0]))
 				{
-					throw new phpbb_db_migration_exception('MIGRATION_INVALID_DATA_CUSTOM_NOT_CALLABLE', $step);
+					throw new \phpbb\db\migration\exception('MIGRATION_INVALID_DATA_CUSTOM_NOT_CALLABLE', $step);
 				}
 
 				return array(
@@ -508,17 +513,17 @@ class phpbb_db_migrator
 			default:
 				if (!$method)
 				{
-					throw new phpbb_db_migration_exception('MIGRATION_INVALID_DATA_UNKNOWN_TYPE', $step);
+					throw new \phpbb\db\migration\exception('MIGRATION_INVALID_DATA_UNKNOWN_TYPE', $step);
 				}
 
 				if (!isset($this->tools[$class]))
 				{
-					throw new phpbb_db_migration_exception('MIGRATION_INVALID_DATA_UNDEFINED_TOOL', $step);
+					throw new \phpbb\db\migration\exception('MIGRATION_INVALID_DATA_UNDEFINED_TOOL', $step);
 				}
 
 				if (!method_exists(get_class($this->tools[$class]), $method))
 				{
-					throw new phpbb_db_migration_exception('MIGRATION_INVALID_DATA_UNDEFINED_METHOD', $step);
+					throw new \phpbb\db\migration\exception('MIGRATION_INVALID_DATA_UNDEFINED_METHOD', $step);
 				}
 
 				// Attempt to reverse operations
@@ -622,6 +627,7 @@ class phpbb_db_migrator
 				{
 					continue;
 				}
+
 				return false;
 			}
 
@@ -656,7 +662,7 @@ class phpbb_db_migrator
 	* Helper to get a migration
 	*
 	* @param string $name Name of the migration
-	* @return phpbb_db_migration
+	* @return \phpbb\db\migration\migration
 	*/
 	protected function get_migration($name)
 	{
@@ -694,7 +700,7 @@ class phpbb_db_migrator
 	/**
 	* Load migration data files from a directory
 	*
-	* @param phpbb_extension_finder $finder
+	* @param \phpbb\extension\finder $finder
 	* @param string $path Path to migration data files
 	* @param bool $check_fulfillable If TRUE (default), we will check
 	* 	if all of the migrations are fulfillable after loading them.
@@ -703,11 +709,11 @@ class phpbb_db_migrator
 	* 	with the last call to prevent throwing errors unnecessarily).
 	* @return array Array of migration names
 	*/
-	public function load_migrations(phpbb_extension_finder $finder, $path, $check_fulfillable = true)
+	public function load_migrations(\phpbb\extension\finder $finder, $path, $check_fulfillable = true)
 	{
 		if (!is_dir($path))
 		{
-			throw new phpbb_db_migration_exception('DIRECTORY INVALID', $path);
+			throw new \phpbb\db\migration\exception('DIRECTORY INVALID', $path);
 		}
 
 		$migrations = array();
@@ -736,7 +742,7 @@ class phpbb_db_migrator
 				$unfulfillable = $this->unfulfillable($name);
 				if ($unfulfillable !== false)
 				{
-					throw new phpbb_db_migration_exception('MIGRATION_NOT_FULFILLABLE', $name, $unfulfillable);
+					throw new \phpbb\db\migration\exception('MIGRATION_NOT_FULFILLABLE', $name, $unfulfillable);
 				}
 			}
 		}

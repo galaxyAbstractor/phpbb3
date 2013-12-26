@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\notification\type;
 
 /**
 * Private message notifications class
@@ -21,7 +15,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package notifications
 */
-class phpbb_notification_type_pm extends phpbb_notification_type_base
+class pm extends \phpbb\notification\type\base
 {
 	/**
 	* Get notification type name

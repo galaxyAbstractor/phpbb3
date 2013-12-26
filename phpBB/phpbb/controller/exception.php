@@ -7,18 +7,12 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\controller;
 
 /**
 * Controller exception class
 * @package phpBB3
 */
-class phpbb_controller_exception extends RuntimeException
+class exception extends \RuntimeException
 {
 }

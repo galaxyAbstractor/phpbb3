@@ -7,20 +7,14 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\cron\task\core;
 
 /**
 * Tidy sessions cron task.
 *
 * @package phpBB3
 */
-class phpbb_cron_task_core_tidy_sessions extends phpbb_cron_task_base
+class tidy_sessions extends \phpbb\cron\task\base
 {
 	protected $config;
 	protected $user;
@@ -28,10 +22,10 @@ class phpbb_cron_task_core_tidy_sessions extends phpbb_cron_task_base
 	/**
 	* Constructor.
 	*
-	* @param phpbb_config $config The config
-	* @param phpbb_user $user The user
+	* @param \phpbb\config\config $config The config
+	* @param \phpbb\user $user The user
 	*/
-	public function __construct(phpbb_config $config, phpbb_user $user)
+	public function __construct(\phpbb\config\config $config, \phpbb\user $user)
 	{
 		$this->config = $config;
 		$this->user = $user;

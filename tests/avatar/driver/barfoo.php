@@ -1,6 +1,8 @@
 <?php
 
-class phpbb_avatar_driver_barfoo extends phpbb_avatar_driver
+namespace phpbb\avatar\driver;
+
+class barfoo extends \phpbb\avatar\driver\driver
 {
 	public function get_data($row)
 	{
@@ -15,5 +17,10 @@ class phpbb_avatar_driver_barfoo extends phpbb_avatar_driver
 	public function process_form($request, $template, $user, $row, &$error)
 	{
 		return false;
+	}
+
+	public function get_template_name()
+	{
+		return 'barfoo.html';
 	}
 }

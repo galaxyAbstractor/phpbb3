@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\notification\type;
 
 /**
 * Topic in queue notifications class
@@ -21,7 +15,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package notifications
 */
-class phpbb_notification_type_topic_in_queue extends phpbb_notification_type_topic
+class topic_in_queue extends \phpbb\notification\type\topic
 {
 	/**
 	* Get notification type name

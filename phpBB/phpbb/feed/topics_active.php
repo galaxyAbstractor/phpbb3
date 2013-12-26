@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\feed;
 
 /**
 * Active Topics feed
@@ -24,7 +18,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package phpBB3
 */
-class phpbb_feed_topics_active extends phpbb_feed_topic_base
+class topics_active extends \phpbb\feed\topic_base
 {
 	var $sort_days = 7;
 

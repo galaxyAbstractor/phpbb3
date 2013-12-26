@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\cache\driver;
 
 /**
 * ACM for XCache
@@ -24,7 +18,7 @@ if (!defined('IN_PHPBB'))
 * - xcache.admin.enable_auth = off (or xcache.admin.user and xcache.admin.password set)
 *
 */
-class phpbb_cache_driver_xcache extends phpbb_cache_driver_memory
+class xcache extends \phpbb\cache\driver\memory
 {
 	var $extension = 'XCache';
 

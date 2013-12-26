@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\db\driver;
 
 /**
 * Unified ODBC functions
@@ -26,7 +20,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package dbal
 */
-class phpbb_db_driver_mssql_odbc extends phpbb_db_driver_mssql_base
+class mssql_odbc extends \phpbb\db\driver\mssql_base
 {
 	var $last_query_text = '';
 	var $connect_error = '';
@@ -303,7 +297,7 @@ class phpbb_db_driver_mssql_odbc extends phpbb_db_driver_mssql_base
 			$query_id = $this->query_result;
 		}
 
-		if ($cache && $cache->sql_exists($query_id))
+		if ($cache && !is_object($query_id) && $cache->sql_exists($query_id))
 		{
 			return $cache->sql_freeresult($query_id);
 		}

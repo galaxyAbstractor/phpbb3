@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\feed;
 
 /**
 * News feed
@@ -23,7 +17,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package phpBB3
 */
-class phpbb_feed_news extends phpbb_feed_topic_base
+class news extends \phpbb\feed\topic_base
 {
 	function get_news_forums()
 	{

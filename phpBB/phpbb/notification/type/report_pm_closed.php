@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\notification\type;
 
 /**
 * PM report closed notifications class
@@ -21,7 +15,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package notifications
 */
-class phpbb_notification_type_report_pm_closed extends phpbb_notification_type_pm
+class report_pm_closed extends \phpbb\notification\type\pm
 {
 	/**
 	* Get notification type name

@@ -27,7 +27,7 @@ class phpbb_functions_user_group_user_attributes_test extends phpbb_database_tes
 				2,
 				array(
 					'group_avatar'	=> '',
-					'group_avatar_type'		=> 0,
+					'group_avatar_type'		=> '',
 					'group_avatar_height'	=> 0,
 					'group_avatar_width'	=> 0,
 					'group_rank'	=> 0,
@@ -43,7 +43,7 @@ class phpbb_functions_user_group_user_attributes_test extends phpbb_database_tes
 				2,
 				array(
 					'group_avatar'	=> '',
-					'group_avatar_type'		=> 0,
+					'group_avatar_type'		=> '',
 					'group_avatar_height'	=> 0,
 					'group_avatar_width'	=> 0,
 					'group_rank'	=> 0,
@@ -59,7 +59,7 @@ class phpbb_functions_user_group_user_attributes_test extends phpbb_database_tes
 				2,
 				array(
 					'group_avatar'	=> '',
-					'group_avatar_type'		=> 0,
+					'group_avatar_type'		=> '',
 					'group_avatar_height'	=> 0,
 					'group_avatar_width'	=> 0,
 					'group_rank'	=> 0,
@@ -75,7 +75,7 @@ class phpbb_functions_user_group_user_attributes_test extends phpbb_database_tes
 				3,
 				array(
 					'group_avatar'	=> 'default2',
-					'group_avatar_type'		=> 1,
+					'group_avatar_type'		=> 'avatar.driver.upload',
 					'group_avatar_height'	=> 1,
 					'group_avatar_width'	=> 1,
 					'group_rank'	=> 3,
@@ -91,7 +91,7 @@ class phpbb_functions_user_group_user_attributes_test extends phpbb_database_tes
 				3,
 				array(
 					'group_avatar'	=> 'default2',
-					'group_avatar_type'		=> 1,
+					'group_avatar_type'		=> 'avatar.driver.upload',
 					'group_avatar_height'	=> 1,
 					'group_avatar_width'	=> 1,
 					'group_rank'	=> 3,
@@ -107,7 +107,7 @@ class phpbb_functions_user_group_user_attributes_test extends phpbb_database_tes
 				3,
 				array(
 					'group_avatar'	=> 'default2',
-					'group_avatar_type'		=> 1,
+					'group_avatar_type'		=> 'avatar.driver.upload',
 					'group_avatar_height'	=> 1,
 					'group_avatar_width'	=> 1,
 					'group_rank'	=> 3,
@@ -127,21 +127,22 @@ class phpbb_functions_user_group_user_attributes_test extends phpbb_database_tes
 	{
 		global $auth, $cache, $db, $phpbb_dispatcher, $user, $phpbb_container, $phpbb_log, $phpbb_root_path, $phpEx;
 
+		$user = new phpbb_mock_user;
 		$user->ip = '';
 		$cache = new phpbb_mock_cache;
 		$db = $this->new_dbal();
 		$phpbb_dispatcher = new phpbb_mock_event_dispatcher();
-		$auth = $this->getMock('phpbb_auth');
+		$auth = $this->getMock('\phpbb\auth\auth');
 		$auth->expects($this->any())
 			->method('acl_clear_prefetch');
-		$cache_driver = new phpbb_cache_driver_null();
+		$cache_driver = new \phpbb\cache\driver\null();
 		$phpbb_container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
 		$phpbb_container
 			->expects($this->any())
 			->method('get')
 			->with('cache.driver')
 			->will($this->returnValue($cache_driver));
-		$phpbb_log = new phpbb_log($db, $user, $auth, $phpbb_dispatcher, $phpbb_root_path, 'adm/', $phpEx, LOG_TABLE);
+		$phpbb_log = new \phpbb\log\log($db, $user, $auth, $phpbb_dispatcher, $phpbb_root_path, 'adm/', $phpEx, LOG_TABLE);
 
 		group_user_attributes('default', $group_id, array($user_id), false, 'group_name', $group_row);
 

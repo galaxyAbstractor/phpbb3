@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb;
 
-class phpbb_error_collector
+class error_collector
 {
 	var $errors;
 
-	function phpbb_error_collector()
+	function __construct()
 	{
 		$this->errors = array();
 	}

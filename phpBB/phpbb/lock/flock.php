@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\lock;
 
 /**
 * File locking class
 * @package phpBB3
 */
-class phpbb_lock_flock
+class flock
 {
 	/**
 	* Path to the file to which access is controlled

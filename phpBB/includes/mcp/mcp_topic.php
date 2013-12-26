@@ -26,6 +26,7 @@ function mcp_topic_view($id, $mode, $action)
 	$url = append_sid("{$phpbb_root_path}mcp.$phpEx?" . extra_url());
 
 	$user->add_lang('viewtopic');
+	$pagination = $phpbb_container->get('pagination');
 
 	$topic_id = request_var('t', 0);
 	$topic_info = get_topic_data(array($topic_id), false, true);
@@ -129,12 +130,7 @@ function mcp_topic_view($id, $mode, $action)
 	{
 		$start = 0;
 	}
-
-	// Make sure $start is set to the last page if it exceeds the amount
-	if ($start < 0 || $start >= $total)
-	{
-		$start = ($start < 0) ? 0 : floor(($total - 1) / $posts_per_page) * $posts_per_page;
-	}
+	$start = $pagination->validate_start($start, $posts_per_page, $total);
 
 	$sql = 'SELECT u.username, u.username_clean, u.user_colour, p.*
 		FROM ' . POSTS_TABLE . ' p, ' . USERS_TABLE . ' u
@@ -207,13 +203,8 @@ function mcp_topic_view($id, $mode, $action)
 		$message = $row['post_text'];
 		$post_subject = ($row['post_subject'] != '') ? $row['post_subject'] : $topic_info['topic_title'];
 
-		if ($row['bbcode_bitfield'])
-		{
-			$bbcode->bbcode_second_pass($message, $row['bbcode_uid'], $row['bbcode_bitfield']);
-		}
-
-		$message = bbcode_nl2br($message);
-		$message = smiley_text($message);
+		$parse_flags = ($row['bbcode_bitfield'] ? OPTION_FLAG_BBCODE : 0) | OPTION_FLAG_SMILIES;
+		$message = generate_text_for_display($message, $row['bbcode_uid'], $row['bbcode_bitfield'], $parse_flags, false);
 
 		if (!empty($attachments[$row['post_id']]))
 		{
@@ -309,7 +300,7 @@ function mcp_topic_view($id, $mode, $action)
 	$base_url = append_sid("{$phpbb_root_path}mcp.$phpEx", "i=$id&amp;t={$topic_info['topic_id']}&amp;mode=$mode&amp;action=$action&amp;to_topic_id=$to_topic_id&amp;posts_per_page=$posts_per_page&amp;st=$sort_days&amp;sk=$sort_key&amp;sd=$sort_dir");
 	if ($posts_per_page)
 	{
-		phpbb_generate_template_pagination($template, $base_url, 'pagination', 'start', $total, $posts_per_page, $start);
+		$pagination->generate_template_pagination($base_url, 'pagination', 'start', $total, $posts_per_page, $start);
 	}
 
 	$template->assign_vars(array(
@@ -352,7 +343,7 @@ function mcp_topic_view($id, $mode, $action)
 		'RETURN_TOPIC'		=> sprintf($user->lang['RETURN_TOPIC'], '<a href="' . append_sid("{$phpbb_root_path}viewtopic.$phpEx", "f={$topic_info['forum_id']}&amp;t={$topic_info['topic_id']}&amp;start=$start") . '">', '</a>'),
 		'RETURN_FORUM'		=> sprintf($user->lang['RETURN_FORUM'], '<a href="' . append_sid("{$phpbb_root_path}viewforum.$phpEx", "f={$topic_info['forum_id']}&amp;start=$start") . '">', '</a>'),
 
-		'PAGE_NUMBER'		=> phpbb_on_page($template, $user, $base_url, $total, $posts_per_page, $start),
+		'PAGE_NUMBER'		=> $pagination->on_page($base_url, $total, $posts_per_page, $start),
 		'TOTAL_POSTS'		=> $user->lang('VIEW_TOPIC_POSTS', (int) $total),
 	));
 }
@@ -573,23 +564,15 @@ function split_topic($action, $topic_id, $to_forum_id, $subject)
 
 		// Link back to both topics
 		$return_link = sprintf($user->lang['RETURN_TOPIC'], '<a href="' . append_sid("{$phpbb_root_path}viewtopic.$phpEx", 'f=' . $post_info['forum_id'] . '&amp;t=' . $post_info['topic_id']) . '">', '</a>') . '<br /><br />' . sprintf($user->lang['RETURN_NEW_TOPIC'], '<a href="' . append_sid("{$phpbb_root_path}viewtopic.$phpEx", 'f=' . $to_forum_id . '&amp;t=' . $to_topic_id) . '">', '</a>');
+		$redirect = request_var('redirect', "{$phpbb_root_path}viewtopic.$phpEx?f=$to_forum_id&amp;t=$to_topic_id");
+		$redirect = reapply_sid($redirect);
+
+		meta_refresh(3, $redirect);
+		trigger_error($user->lang[$success_msg] . '<br /><br />' . $return_link);
 	}
 	else
 	{
 		confirm_box(false, ($action == 'split_all') ? 'SPLIT_TOPIC_ALL' : 'SPLIT_TOPIC_BEYOND', $s_hidden_fields);
-	}
-
-	$redirect = request_var('redirect', "{$phpbb_root_path}viewtopic.$phpEx?f=$to_forum_id&amp;t=$to_topic_id");
-	$redirect = reapply_sid($redirect);
-
-	if (!$success_msg)
-	{
-		return;
-	}
-	else
-	{
-		meta_refresh(3, $redirect);
-		trigger_error($user->lang[$success_msg] . '<br /><br />' . $return_link);
 	}
 }
 
@@ -674,30 +657,22 @@ function merge_posts($topic_id, $to_topic_id)
 			}
 
 			// If the topic no longer exist, we will update the topic watch table.
-			phpbb_update_rows_avoiding_duplicates_notify_status($db, TOPICS_WATCH_TABLE, 'topic_id', $topic_ids, $to_topic_id);
+			phpbb_update_rows_avoiding_duplicates_notify_status($db, TOPICS_WATCH_TABLE, 'topic_id', array($topic_id), $to_topic_id);
 
 			// If the topic no longer exist, we will update the bookmarks table.
-			phpbb_update_rows_avoiding_duplicates($db, BOOKMARKS_TABLE, 'topic_id', $topic_id, $to_topic_id);
+			phpbb_update_rows_avoiding_duplicates($db, BOOKMARKS_TABLE, 'topic_id', array($topic_id), $to_topic_id);
 		}
 
 		// Link to the new topic
 		$return_link .= (($return_link) ? '<br /><br />' : '') . sprintf($user->lang['RETURN_NEW_TOPIC'], '<a href="' . append_sid("{$phpbb_root_path}viewtopic.$phpEx", 'f=' . $to_forum_id . '&amp;t=' . $to_topic_id) . '">', '</a>');
+		$redirect = request_var('redirect', "{$phpbb_root_path}viewtopic.$phpEx?f=$to_forum_id&amp;t=$to_topic_id");
+		$redirect = reapply_sid($redirect);
+
+		meta_refresh(3, $redirect);
+		trigger_error($user->lang[$success_msg] . '<br /><br />' . $return_link);
 	}
 	else
 	{
 		confirm_box(false, 'MERGE_POSTS', $s_hidden_fields);
-	}
-
-	$redirect = request_var('redirect', "{$phpbb_root_path}viewtopic.$phpEx?f=$to_forum_id&amp;t=$to_topic_id");
-	$redirect = reapply_sid($redirect);
-
-	if (!$success_msg)
-	{
-		return;
-	}
-	else
-	{
-		meta_refresh(3, $redirect);
-		trigger_error($user->lang[$success_msg] . '<br /><br />' . $return_link);
 	}
 }

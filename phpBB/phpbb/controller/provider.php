@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\controller;
 
 use Symfony\Component\Routing\RouteCollection;
 use Symfony\Component\Routing\Loader\YamlFileLoader;
@@ -23,23 +17,23 @@ use Symfony\Component\Config\FileLocator;
 * Controller interface
 * @package phpBB3
 */
-class phpbb_controller_provider
+class provider
 {
 	/**
 	* YAML file(s) containing route information
 	* @var array
 	*/
-	protected $routing_paths;
+	protected $routing_files;
 
 	/**
 	* Construct method
 	*
-	* @param array() $routing_paths Array of strings containing paths
+	* @param array() $routing_files Array of strings containing paths
 	*							to YAML files holding route information
 	*/
-	public function __construct($routing_paths = array())
+	public function __construct($routing_files = array())
 	{
-		$this->routing_paths = $routing_paths;
+		$this->routing_files = $routing_files;
 	}
 
 	/**
@@ -48,16 +42,15 @@ class phpbb_controller_provider
 	*
 	* @return The current instance of this object for method chaining
 	*/
-	public function import_paths_from_finder(phpbb_extension_finder $finder)
+	public function import_paths_from_finder(\phpbb\extension\finder $finder)
 	{
 		// We hardcode the path to the core config directory
 		// because the finder cannot find it
-		$this->routing_paths = array_merge(array('config'), array_map('dirname', array_keys($finder
+		$this->routing_files = array_merge(array('config/routing.yml'), array_keys($finder
 			->directory('config')
-			->prefix('routing')
-			->suffix('yml')
+			->suffix('routing.yml')
 			->find()
-		)));
+		));
 
 		return $this;
 	}
@@ -71,10 +64,10 @@ class phpbb_controller_provider
 	public function find($base_path = '')
 	{
 		$routes = new RouteCollection;
-		foreach ($this->routing_paths as $path)
+		foreach ($this->routing_files as $file_path)
 		{
-			$loader = new YamlFileLoader(new FileLocator($base_path . $path));
-			$routes->addCollection($loader->load('routing.yml'));
+			$loader = new YamlFileLoader(new FileLocator($base_path));
+			$routes->addCollection($loader->load($file_path));
 		}
 
 		return $routes;

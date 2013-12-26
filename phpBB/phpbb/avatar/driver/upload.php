@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\avatar\driver;
 
 /**
 * Handles avatars uploaded to the board
 * @package phpBB3
 */
-class phpbb_avatar_driver_upload extends phpbb_avatar_driver
+class upload extends \phpbb\avatar\driver\driver
 {
 	/**
 	* @inheritdoc
@@ -27,7 +21,7 @@ class phpbb_avatar_driver_upload extends phpbb_avatar_driver
 	public function get_data($row, $ignore_config = false)
 	{
 		return array(
-			'src' => $this->phpbb_root_path . 'download/file.' . $this->php_ext . '?avatar=' . $row['avatar'],
+			'src' => $this->path_helper->get_web_root_path() . 'download/file.' . $this->php_ext . '?avatar=' . $row['avatar'],
 			'width' => $row['avatar_width'],
 			'height' => $row['avatar_height'],
 		);
@@ -66,7 +60,7 @@ class phpbb_avatar_driver_upload extends phpbb_avatar_driver
 			include($this->phpbb_root_path . 'includes/functions_upload.' . $this->php_ext);
 		}
 
-		$upload = new fileupload('AVATAR_', $this->allowed_extensions, $this->config['avatar_filesize'], $this->config['avatar_min_width'], $this->config['avatar_min_height'], $this->config['avatar_max_width'], $this->config['avatar_max_height'], (isset($this->config['mime_triggers']) ? explode('|', $this->config['mime_triggers']) : false));
+		$upload = new \fileupload('AVATAR_', $this->allowed_extensions, $this->config['avatar_filesize'], $this->config['avatar_min_width'], $this->config['avatar_min_height'], $this->config['avatar_max_width'], $this->config['avatar_max_height'], (isset($this->config['mime_triggers']) ? explode('|', $this->config['mime_triggers']) : false));
 
 		$url = $request->variable('avatar_upload_url', '');
 		$upload_file = $request->file('avatar_upload_file');
@@ -171,6 +165,14 @@ class phpbb_avatar_driver_upload extends phpbb_avatar_driver
 		}
 
 		return true;
+	}
+
+	/**
+	* @inheritdoc
+	*/
+	public function get_template_name()
+	{
+		return 'ucp_avatar_options_upload.html';
 	}
 
 	/**

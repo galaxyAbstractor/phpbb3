@@ -6,19 +6,14 @@
 * @license http://opensource.org/licenses/gpl-2.0.php GNU General Public License v2
 *
 */
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+
+namespace phpbb;
 
 /**
 * A class with various functions that are related to paths, files and the filesystem
 * @package phpBB3
 */
-class phpbb_filesystem
+class filesystem
 {
 	/**
 	* Eliminates useless . and .. components from specified path.

@@ -7,21 +7,21 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\template\twig\node;
 
 
-class phpbb_template_twig_node_event extends Twig_Node
+class event extends \Twig_Node
 {
+	/**
+	 * The subdirectory in which all template listener files must be placed
+	 * @var string
+	 */
+	protected $listener_directory = 'event/';
+
 	/** @var Twig_Environment */
 	protected $environment;
 
-	public function __construct(Twig_Node_Expression $expr, phpbb_template_twig_environment $environment, $lineno, $tag = null)
+	public function __construct(\Twig_Node_Expression $expr, \phpbb\template\twig\environment $environment, $lineno, $tag = null)
 	{
 		$this->environment = $environment;
 
@@ -33,11 +33,11 @@ class phpbb_template_twig_node_event extends Twig_Node
 	 *
 	 * @param Twig_Compiler A Twig_Compiler instance
 	 */
-	public function compile(Twig_Compiler $compiler)
+	public function compile(\Twig_Compiler $compiler)
 	{
 		$compiler->addDebugInfo($this);
 
-		$location = $this->getNode('expr')->getAttribute('name');
+		$location = $this->listener_directory . $this->getNode('expr')->getAttribute('name');
 
 		foreach ($this->environment->get_phpbb_extensions() as $ext_namespace => $ext_path)
 		{
@@ -49,10 +49,10 @@ class phpbb_template_twig_node_event extends Twig_Node
 				//  templates on page load rather than at compile. This is
 				//  slower, but makes developing extensions easier (no need to
 				//  purge the cache when a new event template file is added)
-		        $compiler
-		            ->write("if (\$this->env->getLoader()->exists('@{$ext_namespace}/{$location}.html')) {\n")
-		            ->indent()
-		        ;
+				$compiler
+					->write("if (\$this->env->getLoader()->exists('@{$ext_namespace}/{$location}.html')) {\n")
+					->indent()
+				;
 			}
 
 			if (defined('DEBUG') || $this->environment->getLoader()->exists('@' . $ext_namespace . '/' . $location . '.html'))
@@ -71,7 +71,7 @@ class phpbb_template_twig_node_event extends Twig_Node
 			{
 				$compiler
 					->outdent()
-		            ->write("}\n\n")
+					->write("}\n\n")
 				;
 			}
 		}

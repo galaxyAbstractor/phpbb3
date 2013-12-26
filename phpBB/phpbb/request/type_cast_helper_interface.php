@@ -1,26 +1,20 @@
 <?php
 /**
 *
-* @package phpbb_request
+* @package \phpbb\request\request
 * @copyright (c) 2010 phpBB Group
 * @license http://opensource.org/licenses/gpl-2.0.php GNU General Public License v2
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\request;
 
 /**
 * An interface for type cast operations.
 *
-* @package phpbb_request
+* @package \phpbb\request\request
 */
-interface phpbb_request_type_cast_helper_interface
+interface type_cast_helper_interface
 {
 	/**
 	* Recursively applies addslashes to a variable.

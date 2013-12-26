@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\db\driver;
 
 /**
 * MySQLi Database Abstraction Layer
@@ -21,7 +15,7 @@ if (!defined('IN_PHPBB'))
 * MySQL 4.1+ or MySQL 5.0+
 * @package dbal
 */
-class phpbb_db_driver_mysqli extends phpbb_db_driver_mysql_base
+class mysqli extends \phpbb\db\driver\mysql_base
 {
 	var $multi_insert = true;
 	var $connect_error = '';
@@ -29,7 +23,7 @@ class phpbb_db_driver_mysqli extends phpbb_db_driver_mysql_base
 	/**
 	* Connect to server
 	*/
-	function sql_connect($sqlserver, $sqluser, $sqlpassword, $database, $port = false, $persistency = false , $new_link = false)
+	function sql_connect($sqlserver, $sqluser, $sqlpassword, $database, $port = false, $persistency = false, $new_link = false)
 	{
 		if (!function_exists('mysqli_connect'))
 		{
@@ -45,11 +39,11 @@ class phpbb_db_driver_mysqli extends phpbb_db_driver_mysql_base
 		$this->server = ($this->persistency) ? 'p:' . (($sqlserver) ? $sqlserver : 'localhost') : $sqlserver;
 
 		$this->dbname = $database;
-		$port = (!$port) ? NULL : $port;
+		$port = (!$port) ? null : $port;
 
 		// If port is set and it is not numeric, most likely mysqli socket is set.
 		// Try to map it to the $socket parameter.
-		$socket = NULL;
+		$socket = null;
 		if ($port)
 		{
 			if (is_numeric($port))
@@ -59,7 +53,7 @@ class phpbb_db_driver_mysqli extends phpbb_db_driver_mysql_base
 			else
 			{
 				$socket = $port;
-				$port = NULL;
+				$port = null;
 			}
 		}
 

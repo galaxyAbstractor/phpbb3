@@ -381,13 +381,17 @@ if ($mode == 'delete' || $mode == 'soft_delete')
 if ($mode == 'bump')
 {
 	if ($bump_time = bump_topic_allowed($forum_id, $post_data['topic_bumped'], $post_data['topic_last_post_time'], $post_data['topic_poster'], $post_data['topic_last_poster_id'])
-	   && check_link_hash(request_var('hash', ''), "topic_{$post_data['topic_id']}"))
+		&& check_link_hash(request_var('hash', ''), "topic_{$post_data['topic_id']}"))
 	{
 		$meta_url = phpbb_bump_topic($forum_id, $topic_id, $post_data, $current_time);
 		meta_refresh(3, $meta_url);
+		$message = $user->lang['TOPIC_BUMPED'];
 
-		$message = $user->lang['TOPIC_BUMPED'] . '<br /><br />' . $user->lang('VIEW_MESSAGE', '<a href="' . $meta_url . '">', '</a>');
-		$message .= '<br /><br />' . sprintf($user->lang['RETURN_FORUM'], '<a href="' . append_sid("{$phpbb_root_path}viewforum.$phpEx", 'f=' . $forum_id) . '">', '</a>');
+		if (!$request->is_ajax())
+		{
+			$message .= '<br /><br />' . $user->lang('VIEW_MESSAGE', '<a href="' . $meta_url . '">', '</a>');
+			$message .= '<br /><br />' . $user->lang('RETURN_FORUM', '<a href="' . append_sid("{$phpbb_root_path}viewforum.$phpEx", 'f=' . $forum_id) . '">', '</a>');
+		}
 
 		trigger_error($message);
 	}
@@ -452,6 +456,8 @@ if ($mode == 'edit')
 $orig_poll_options_size = sizeof($post_data['poll_options']);
 
 $message_parser = new parse_message();
+$plupload = $phpbb_container->get('plupload');
+$message_parser->set_plupload($plupload);
 
 if (isset($post_data['post_text']))
 {
@@ -697,7 +703,7 @@ if ($submit || $preview || $refresh)
 	$message_parser->message		= utf8_normalize_nfc(request_var('message', '', true));
 
 	$post_data['username']			= utf8_normalize_nfc(request_var('username', $post_data['username'], true));
-	$post_data['post_edit_reason']	= ($request->variable('edit_reason', false, false, phpbb_request_interface::POST) && $mode == 'edit' && $auth->acl_get('m_edit', $forum_id)) ? utf8_normalize_nfc(request_var('edit_reason', '', true)) : '';
+	$post_data['post_edit_reason']	= ($request->variable('edit_reason', false, false, \phpbb\request\request_interface::POST) && $mode == 'edit' && $auth->acl_get('m_edit', $forum_id)) ? utf8_normalize_nfc(request_var('edit_reason', '', true)) : '';
 
 	$post_data['orig_topic_type']	= $post_data['topic_type'];
 	$post_data['topic_type']		= request_var('topic_type', (($mode != 'post') ? (int) $post_data['topic_type'] : POST_NORMAL));
@@ -815,8 +821,13 @@ if ($submit || $preview || $refresh)
 
 		// We make sure nobody else made exactly the same change
 		// we're about to submit by also checking $message_md5 != $post_data['post_checksum']
-		if (($edit_post_message_checksum !== '' && $edit_post_message_checksum != $post_data['post_checksum'] && $message_md5 != $post_data['post_checksum'])
-		 || ($edit_post_subject_checksum !== '' && $edit_post_subject_checksum != $post_data['post_subject_md5'] && md5($post_data['post_subject']) != $post_data['post_subject_md5']))
+		if ($edit_post_message_checksum !== '' &&
+			$edit_post_message_checksum != $post_data['post_checksum'] &&
+			$message_md5 != $post_data['post_checksum']
+			||
+			$edit_post_subject_checksum !== '' &&
+			$edit_post_subject_checksum != $post_data['post_subject_md5'] &&
+			md5($post_data['post_subject']) != $post_data['post_subject_md5'])
 		{
 			if (topic_review($topic_id, $forum_id, 'post_review_edit', $post_id))
 			{
@@ -1152,8 +1163,14 @@ if ($submit || $preview || $refresh)
 				$data['topic_posts_softdeleted'] = $post_data['topic_posts_softdeleted'];
 			}
 
+			// Only return the username when it is either a guest posting or we are editing a post and
+			// the username was supplied; otherwise post_data might hold the data of the post that is
+			// being quoted (which could result in the username being returned being that of the quoted
+			// post's poster, not the poster of the current post). See: PHPBB3-11769 for more information.
+			$post_author_name = ((!$user->data['is_registered'] || $mode == 'edit') && $post_data['username'] !== '') ? $post_data['username'] : '';
+
 			// The last parameter tells submit_post if search indexer has to be run
-			$redirect_url = submit_post($mode, $post_data['post_subject'], $post_data['username'], $post_data['topic_type'], $poll, $data, $update_message, ($update_message || $update_subject) ? true : false);
+			$redirect_url = submit_post($mode, $post_data['post_subject'], $post_author_name, $post_data['topic_type'], $poll, $data, $update_message, ($update_message || $update_subject) ? true : false);
 
 			if ($config['enable_post_confirm'] && !$user->data['is_registered'] && (isset($captcha) && $captcha->is_solved() === true) && ($mode == 'post' || $mode == 'reply' || $mode == 'quote'))
 			{
@@ -1517,7 +1534,7 @@ $template->assign_vars(array(
 * @event core.posting_modify_template_vars
 * @since 3.1-A1
 */
-$phpbb_dispatcher->trigger_event('core.posting_modify_template_vars');
+$phpbb_dispatcher->dispatch('core.posting_modify_template_vars');
 
 // Build custom bbcodes array
 display_custom_bbcodes();
@@ -1544,6 +1561,11 @@ if (($mode == 'post' || ($mode == 'edit' && $post_id == $post_data['topic_first_
 
 // Show attachment box for adding attachments if true
 $allowed = ($auth->acl_get('f_attach', $forum_id) && $auth->acl_get('u_attach') && $config['allow_attachments'] && $form_enctype);
+
+if ($allowed)
+{
+	$plupload->configure($cache, $template, $s_action, $forum_id);
+}
 
 // Attachment entry
 posting_gen_attachment_entry($attachment_data, $filename_data, $allowed);
@@ -1598,7 +1620,7 @@ function upload_popup($forum_style = 0)
 */
 function handle_post_delete($forum_id, $topic_id, $post_id, &$post_data, $is_soft = false, $soft_delete_reason = '')
 {
-	global $user, $db, $auth, $config;
+	global $user, $db, $auth, $config, $request;
 	global $phpbb_root_path, $phpEx;
 
 	$perm_check = ($is_soft) ? 'softdelete' : 'delete';
@@ -1644,11 +1666,19 @@ function handle_post_delete($forum_id, $topic_id, $post_id, &$post_data, $is_sof
 				add_log('mod', $forum_id, $topic_id, (($is_soft) ? 'LOG_SOFTDELETE_POST' : 'LOG_DELETE_POST'), $post_data['post_subject'], $post_username);
 
 				$meta_info = append_sid("{$phpbb_root_path}viewtopic.$phpEx", "f=$forum_id&amp;t=$topic_id&amp;p=$next_post_id") . "#p$next_post_id";
-				$message = $user->lang['POST_DELETED'] . '<br /><br />' . sprintf($user->lang['RETURN_TOPIC'], '<a href="' . $meta_info . '">', '</a>');
+				$message = $user->lang['POST_DELETED'];
+
+				if (!$request->is_ajax())
+				{
+					$message .= '<br /><br />' . $user->lang('RETURN_TOPIC', '<a href="' . $meta_info . '">', '</a>');
+				}
 			}
 
 			meta_refresh(3, $meta_info);
-			$message .= '<br /><br />' . sprintf($user->lang['RETURN_FORUM'], '<a href="' . append_sid("{$phpbb_root_path}viewforum.$phpEx", 'f=' . $forum_id) . '">', '</a>');
+			if (!$request->is_ajax())
+			{
+				$message .= '<br /><br />' . $user->lang('RETURN_FORUM', '<a href="' . append_sid("{$phpbb_root_path}viewforum.$phpEx", 'f=' . $forum_id) . '">', '</a>');
+			}
 			trigger_error($message);
 		}
 		else

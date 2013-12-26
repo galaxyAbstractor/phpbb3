@@ -7,40 +7,29 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\event;
 
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
-class phpbb_event_extension_subscriber_loader
+class extension_subscriber_loader
 {
 	private $dispatcher;
-	private $extension_manager;
+	private $listener_collection;
 
-	public function __construct(EventDispatcherInterface $dispatcher, phpbb_extension_manager $extension_manager)
+	public function __construct(EventDispatcherInterface $dispatcher, \phpbb\di\service_collection $listener_collection)
 	{
 		$this->dispatcher = $dispatcher;
-		$this->extension_manager = $extension_manager;
+		$this->listener_collection = $listener_collection;
 	}
 
 	public function load()
 	{
-		$finder = $this->extension_manager->get_finder();
-		$subscriber_classes = $finder
-			->extension_directory('/event')
-			->suffix('listener')
-			->core_path('event/')
-			->get_classes();
-
-		foreach ($subscriber_classes as $class)
+		if (!empty($this->listener_collection))
 		{
-			$subscriber = new $class();
-			$this->dispatcher->addSubscriber($subscriber);
+			foreach ($this->listener_collection as $listener)
+			{
+				$this->dispatcher->addSubscriber($listener);
+			}
 		}
 	}
 }

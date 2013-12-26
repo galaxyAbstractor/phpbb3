@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\cache\driver;
 
 if (!defined('PHPBB_ACM_REDIS_PORT'))
 {
@@ -33,7 +27,7 @@ if (!defined('PHPBB_ACM_REDIS_HOST'))
 *
 * @package acm
 */
-class phpbb_cache_driver_redis extends phpbb_cache_driver_memory
+class redis extends \phpbb\cache\driver\memory
 {
 	var $extension = 'redis';
 
@@ -56,7 +50,7 @@ class phpbb_cache_driver_redis extends phpbb_cache_driver_memory
 		// Call the parent constructor
 		parent::__construct();
 
-		$this->redis = new Redis();
+		$this->redis = new \Redis();
 
 		$args = func_get_args();
 		if (!empty($args))
@@ -83,8 +77,8 @@ class phpbb_cache_driver_redis extends phpbb_cache_driver_memory
 			}
 		}
 
-		$this->redis->setOption(Redis::OPT_SERIALIZER, Redis::SERIALIZER_PHP);
-		$this->redis->setOption(Redis::OPT_PREFIX, $this->key_prefix);
+		$this->redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
+		$this->redis->setOption(\Redis::OPT_PREFIX, $this->key_prefix);
 
 		if (defined('PHPBB_ACM_REDIS_DB'))
 		{

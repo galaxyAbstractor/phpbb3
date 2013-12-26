@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\cron\task;
 
 /**
 * Cron task base class. Provides sensible defaults for cron tasks
@@ -26,7 +20,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package phpBB3
 */
-abstract class phpbb_cron_task_base implements phpbb_cron_task
+abstract class base implements \phpbb\cron\task\task
 {
 	private $name;
 

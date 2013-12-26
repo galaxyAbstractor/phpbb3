@@ -7,20 +7,14 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\search;
 
 /**
 * fulltext_native
 * phpBB's own db driven fulltext search, version 2
 * @package search
 */
-class phpbb_search_fulltext_native extends phpbb_search_base
+class fulltext_native extends \phpbb\search\base
 {
 	/**
 	 * Associative array holding index stats
@@ -80,19 +74,19 @@ class phpbb_search_fulltext_native extends phpbb_search_base
 
 	/**
 	 * Config object
-	 * @var phpbb_config
+	 * @var \phpbb\config\config
 	 */
 	protected $config;
 
 	/**
 	 * Database connection
-	 * @var phpbb_db_driver
+	 * @var \phpbb\db\driver\driver
 	 */
 	protected $db;
 
 	/**
 	 * User object
-	 * @var phpbb_user
+	 * @var \phpbb\user
 	 */
 	protected $user;
 
@@ -848,7 +842,6 @@ class phpbb_search_fulltext_native extends phpbb_search_base
 		}
 		$this->db->sql_freeresult($result);
 
-
 		// if we use mysql and the total result count is not cached yet, retrieve it from the db
 		if (!$total_results && $is_mysql)
 		{
@@ -1187,8 +1180,8 @@ class phpbb_search_fulltext_native extends phpbb_search_base
 				* we know that it will also be lower than CJK ranges
 				*/
 				if ((strncmp($word, UTF8_HANGUL_FIRST, 3) < 0 || strncmp($word, UTF8_HANGUL_LAST, 3) > 0)
-				 && (strncmp($word, UTF8_CJK_FIRST, 3) < 0 || strncmp($word, UTF8_CJK_LAST, 3) > 0)
-				 && (strncmp($word, UTF8_CJK_B_FIRST, 4) < 0 || strncmp($word, UTF8_CJK_B_LAST, 4) > 0))
+					&& (strncmp($word, UTF8_CJK_FIRST, 3) < 0 || strncmp($word, UTF8_CJK_LAST, 3) > 0)
+					&& (strncmp($word, UTF8_CJK_B_FIRST, 4) < 0 || strncmp($word, UTF8_CJK_B_LAST, 4) > 0))
 				{
 					$word = strtok(' ');
 					continue;
@@ -1556,7 +1549,7 @@ class phpbb_search_fulltext_native extends phpbb_search_base
 	* @param	string	$encoding		Text encoding
 	* @return	string					Cleaned up text, only alphanumeric chars are left
 	*
-	* @todo normalizer::cleanup being able to be used?
+	* @todo \normalizer::cleanup being able to be used?
 	*/
 	protected function cleanup($text, $allowed_chars = null, $encoding = 'utf-8')
 	{
@@ -1588,7 +1581,7 @@ class phpbb_search_fulltext_native extends phpbb_search_base
 		* If we use it more widely, an instance of that class should be held in a
 		* a global variable instead
 		*/
-		utf_normalizer::nfc($text);
+		\utf_normalizer::nfc($text);
 
 		/**
 		* The first thing we do is:
@@ -1682,8 +1675,8 @@ class phpbb_search_fulltext_native extends phpbb_search_base
 			$pos += $utf_len;
 
 			if (($utf_char >= UTF8_HANGUL_FIRST && $utf_char <= UTF8_HANGUL_LAST)
-			 || ($utf_char >= UTF8_CJK_FIRST && $utf_char <= UTF8_CJK_LAST)
-			 || ($utf_char >= UTF8_CJK_B_FIRST && $utf_char <= UTF8_CJK_B_LAST))
+				|| ($utf_char >= UTF8_CJK_FIRST && $utf_char <= UTF8_CJK_LAST)
+				|| ($utf_char >= UTF8_CJK_B_FIRST && $utf_char <= UTF8_CJK_B_LAST))
 			{
 				/**
 				* All characters within these ranges are valid

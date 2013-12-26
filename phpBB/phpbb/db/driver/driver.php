@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\db\driver;
 
 /**
 * Database Abstraction Layer
 * @package dbal
 */
-class phpbb_db_driver
+class driver
 {
 	var $db_connect_id;
 	var $query_result;
@@ -82,7 +76,7 @@ class phpbb_db_driver
 
 		// Fill default sql layer based on the class being called.
 		// This can be changed by the specified layer itself later if needed.
-		$this->sql_layer = substr(get_class($this), strlen('phpbb_db_driver_'));
+		$this->sql_layer = substr(get_class($this), strlen('phpbb\db\driver\\'));
 
 		// Do not change this please! This variable is used to easy the use of it - and is hardcoded.
 		$this->any_char = chr(0) . '%';
@@ -822,7 +816,7 @@ class phpbb_db_driver
 	*/
 	function sql_report($mode, $query = '')
 	{
-		global $cache, $starttime, $phpbb_root_path, $phpbb_admin_path, $user;
+		global $cache, $starttime, $phpbb_root_path, $phpbb_path_helper, $user;
 		global $request;
 
 		if (is_object($request) && !$request->variable('explain', false))
@@ -852,7 +846,7 @@ class phpbb_db_driver
 					<head>
 						<meta charset="utf-8">
 						<title>SQL Report</title>
-						<link href="' . htmlspecialchars($phpbb_admin_path) . 'style/admin.css" rel="stylesheet" type="text/css" media="screen" />
+						<link href="' . htmlspecialchars($phpbb_path_helper->update_web_root_path($phpbb_root_path) . $phpbb_path_helper->get_adm_relative_path()) . 'style/admin.css" rel="stylesheet" type="text/css" media="screen" />
 					</head>
 					<body id="errorpage">
 					<div id="wrap">

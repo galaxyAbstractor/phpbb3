@@ -27,7 +27,7 @@ class acp_icons
 	{
 		global $db, $user, $auth, $template, $cache;
 		global $config, $phpbb_root_path, $phpbb_admin_path, $phpEx;
-		global $request;
+		global $request, $phpbb_container;
 
 		$user->add_lang('acp/posting');
 
@@ -307,7 +307,6 @@ class acp_icons
 
 						'IMG_SRC'			=> $phpbb_root_path . $img_path . '/' . $default_row['smiley_url'],
 						'IMG_PATH'			=> $img_path,
-						'PHPBB_ROOT_PATH'	=> $phpbb_root_path,
 
 						'CODE'				=> $default_row['code'],
 						'EMOTION'			=> $default_row['emotion'],
@@ -338,7 +337,7 @@ class acp_icons
 				$image_display_on_posting = (isset($_POST['display_on_posting'])) ? request_var('display_on_posting', array('' => 0)) : array();
 
 				// Ok, add the relevant bits if we are adding new codes to existing emoticons...
-				if ($request->variable('add_additional_code', false, false, phpbb_request_interface::POST))
+				if ($request->variable('add_additional_code', false, false, \phpbb\request\request_interface::POST))
 				{
 					$add_image			= request_var('add_image', '');
 					$add_code			= utf8_normalize_nfc(request_var('add_code', '', true));
@@ -354,7 +353,7 @@ class acp_icons
 						$image_width[$add_image] = request_var('add_width', 0);
 						$image_height[$add_image] = request_var('add_height', 0);
 
-						if ($request->variable('add_display_on_posting', false, false, phpbb_request_interface::POST))
+						if ($request->variable('add_display_on_posting', false, false, \phpbb\request\request_interface::POST))
 						{
 							$image_display_on_posting[$add_image] = 1;
 						}
@@ -480,7 +479,7 @@ class acp_icons
 							$icons_updated++;
 						}
 
- 					}
+					}
 				}
 
 				$cache->destroy('_icons');
@@ -785,7 +784,7 @@ class acp_icons
 					
 					if ($request->is_ajax())
 					{
-						$json_response = new phpbb_json_response;
+						$json_response = new \phpbb\json_response;
 						$json_response->send(array(
 							'MESSAGE_TITLE'	=> $user->lang['INFORMATION'],
 							'MESSAGE_TEXT'	=> $notice,
@@ -894,6 +893,7 @@ class acp_icons
 		);
 
 		$spacer = false;
+		$pagination = $phpbb_container->get('pagination');
 		$pagination_start = request_var('start', 0);
 
 		$item_count = $this->item_count($table);
@@ -928,7 +928,7 @@ class acp_icons
 		}
 		$db->sql_freeresult($result);
 
-		phpbb_generate_template_pagination($template, $this->u_action, 'pagination', 'start', $item_count, $config['smilies_per_page'], $pagination_start);
+		$pagination->generate_template_pagination($this->u_action, 'pagination', 'start', $item_count, $config['smilies_per_page'], $pagination_start);
 	}
 
 	/**

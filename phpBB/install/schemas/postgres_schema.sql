@@ -674,6 +674,30 @@ CREATE INDEX phpbb_notifications_item_ident ON phpbb_notifications (notification
 CREATE INDEX phpbb_notifications_user ON phpbb_notifications (user_id, notification_read);
 
 /*
+	Table: 'phpbb_oauth_accounts'
+*/
+CREATE TABLE phpbb_oauth_accounts (
+	user_id INT4 DEFAULT '0' NOT NULL CHECK (user_id >= 0),
+	provider varchar(255) DEFAULT '' NOT NULL,
+	oauth_provider_id varchar(4000) DEFAULT '' NOT NULL,
+	PRIMARY KEY (user_id, provider)
+);
+
+
+/*
+	Table: 'phpbb_oauth_tokens'
+*/
+CREATE TABLE phpbb_oauth_tokens (
+	user_id INT4 DEFAULT '0' NOT NULL CHECK (user_id >= 0),
+	session_id char(32) DEFAULT '' NOT NULL,
+	provider varchar(255) DEFAULT '' NOT NULL,
+	oauth_token TEXT DEFAULT '' NOT NULL
+);
+
+CREATE INDEX phpbb_oauth_tokens_user_id ON phpbb_oauth_tokens (user_id);
+CREATE INDEX phpbb_oauth_tokens_provider ON phpbb_oauth_tokens (provider);
+
+/*
 	Table: 'phpbb_poll_options'
 */
 CREATE TABLE phpbb_poll_options (

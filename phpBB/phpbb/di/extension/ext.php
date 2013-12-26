@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\di\extension;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
@@ -23,7 +17,7 @@ use Symfony\Component\Config\FileLocator;
 /**
 * Container ext extension
 */
-class phpbb_di_extension_ext extends Extension
+class ext extends Extension
 {
 	protected $paths = array();
 

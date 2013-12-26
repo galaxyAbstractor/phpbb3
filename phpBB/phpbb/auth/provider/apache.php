@@ -7,32 +7,26 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\auth\provider;
 
 /**
  * Apache authentication provider for phpBB3
  *
  * @package auth
  */
-class phpbb_auth_provider_apache extends phpbb_auth_provider_base
+class apache extends \phpbb\auth\provider\base
 {
 	/**
 	 * Apache Authentication Constructor
 	 *
-	 * @param 	phpbb_db_driver 	$db
-	 * @param 	phpbb_config 		$config
-	 * @param 	phpbb_request 		$request
-	 * @param 	phpbb_user 			$user
+	 * @param 	\phpbb\db\driver\driver 	$db
+	 * @param 	\phpbb\config\config 		$config
+	 * @param 	\phpbb\request\request 		$request
+	 * @param 	\phpbb\user 			$user
 	 * @param 	string 				$phpbb_root_path
 	 * @param 	string 				$php_ext
 	 */
-	public function __construct(phpbb_db_driver $db, phpbb_config $config, phpbb_request $request, phpbb_user $user, $phpbb_root_path, $php_ext)
+	public function __construct(\phpbb\db\driver\driver $db, \phpbb\config\config $config, \phpbb\request\request $request, \phpbb\user $user, $phpbb_root_path, $php_ext)
 	{
 		$this->db = $db;
 		$this->config = $config;
@@ -47,7 +41,7 @@ class phpbb_auth_provider_apache extends phpbb_auth_provider_base
 	 */
 	public function init()
 	{
-		if (!$this->request->is_set('PHP_AUTH_USER', phpbb_request_interface::SERVER) || $this->user->data['username'] !== htmlspecialchars_decode($this->request->server('PHP_AUTH_USER')))
+		if (!$this->request->is_set('PHP_AUTH_USER', \phpbb\request\request_interface::SERVER) || $this->user->data['username'] !== htmlspecialchars_decode($this->request->server('PHP_AUTH_USER')))
 		{
 			return $this->user->lang['APACHE_SETUP_BEFORE_USE'];
 		}
@@ -78,7 +72,7 @@ class phpbb_auth_provider_apache extends phpbb_auth_provider_base
 			);
 		}
 
-		if (!$this->request->is_set('PHP_AUTH_USER', phpbb_request_interface::SERVER))
+		if (!$this->request->is_set('PHP_AUTH_USER', \phpbb\request\request_interface::SERVER))
 		{
 			return array(
 				'status'		=> LOGIN_ERROR_EXTERNAL_AUTH,
@@ -149,7 +143,7 @@ class phpbb_auth_provider_apache extends phpbb_auth_provider_base
 	 */
 	public function autologin()
 	{
-		if (!$this->request->is_set('PHP_AUTH_USER', phpbb_request_interface::SERVER))
+		if (!$this->request->is_set('PHP_AUTH_USER', \phpbb\request\request_interface::SERVER))
 		{
 			return array();
 		}
@@ -241,7 +235,7 @@ class phpbb_auth_provider_apache extends phpbb_auth_provider_base
 	public function validate_session($user)
 	{
 		// Check if PHP_AUTH_USER is set and handle this case
-		if ($this->request->is_set('PHP_AUTH_USER', phpbb_request_interface::SERVER))
+		if ($this->request->is_set('PHP_AUTH_USER', \phpbb\request\request_interface::SERVER))
 		{
 			$php_auth_user = $this->request->server('PHP_AUTH_USER');
 

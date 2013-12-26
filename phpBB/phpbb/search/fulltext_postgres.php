@@ -7,20 +7,14 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\search;
 
 /**
 * fulltext_postgres
 * Fulltext search for PostgreSQL
 * @package search
 */
-class phpbb_search_fulltext_postgres extends phpbb_search_base
+class fulltext_postgres extends \phpbb\search\base
 {
 	/**
 	 * Associative array holding index stats
@@ -61,19 +55,19 @@ class phpbb_search_fulltext_postgres extends phpbb_search_base
 
 	/**
 	 * Config object
-	 * @var phpbb_config
+	 * @var \phpbb\config\config
 	 */
 	protected $config;
 
 	/**
 	 * Database connection
-	 * @var phpbb_db_driver
+	 * @var \phpbb\db\driver\driver
 	 */
 	protected $db;
 
 	/**
 	 * User object
-	 * @var phpbb_user
+	 * @var \phpbb\user
 	 */
 	protected $user;
 
@@ -99,7 +93,7 @@ class phpbb_search_fulltext_postgres extends phpbb_search_base
 
 	/**
 	 * Constructor
-	 * Creates a new phpbb_search_fulltext_postgres, which is used as a search backend
+	 * Creates a new \phpbb\search\fulltext_postgres, which is used as a search backend
 	 *
 	 * @param string|bool $error Any error that occurs is passed on through this reference variable otherwise false
 	 */

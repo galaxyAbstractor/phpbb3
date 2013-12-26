@@ -324,7 +324,11 @@ class acp_groups
 					$avatar_drivers = $phpbb_avatar_manager->get_enabled_drivers();
 
 					// This is normalised data, without the group_ prefix
-					$avatar_data = phpbb_avatar_manager::clean_row($group_row);
+					$avatar_data = \phpbb\avatar\manager::clean_row($group_row, 'group');
+					if (!isset($avatar_data['id']))
+					{
+						$avatar_data['id'] = 'g' . $group_id;
+					}
 				}
 
 
@@ -379,7 +383,7 @@ class acp_groups
 						}
 						else
 						{
-							$driver = $phpbb_avatar_manager->get_driver($user->data['user_avatar_type']);
+							$driver = $phpbb_avatar_manager->get_driver($avatar_data['avatar_type']);
 							if ($driver)
 							{
 								$driver->delete($avatar_data);
@@ -657,7 +661,6 @@ class acp_groups
 					'GROUP_HIDDEN'		=> $type_hidden,
 
 					'U_BACK'			=> $u_back,
-					'U_SWATCH'			=> append_sid("{$phpbb_admin_path}swatch.$phpEx", 'form=settings&amp;name=group_colour'),
 					'U_ACTION'			=> "{$this->u_action}&amp;action=$action&amp;g=$group_id",
 					'L_AVATAR_EXPLAIN'	=> phpbb_avatar_explanation_string(),
 				));
@@ -673,6 +676,7 @@ class acp_groups
 				}
 
 				$this->page_title = 'GROUP_MEMBERS';
+				$pagination = $phpbb_container->get('pagination');
 
 				// Grab the leaders - always, on every page...
 				$sql = 'SELECT u.user_id, u.username, u.username_clean, u.user_regdate, u.user_colour, u.user_posts, u.group_id, ug.group_leader, ug.user_pending
@@ -716,14 +720,14 @@ class acp_groups
 				}
 
 				$base_url = $this->u_action . "&amp;action=$action&amp;g=$group_id";
-				phpbb_generate_template_pagination($template, $base_url, 'pagination', 'start', $total_members, $config['topics_per_page'], $start);
+				$pagination->generate_template_pagination($base_url, 'pagination', 'start', $total_members, $config['topics_per_page'], $start);
 
 				$template->assign_vars(array(
 					'S_LIST'			=> true,
 					'S_GROUP_SPECIAL'	=> ($group_row['group_type'] == GROUP_SPECIAL) ? true : false,
 					'S_ACTION_OPTIONS'	=> $s_action_options,
 
-					'S_ON_PAGE'		=> phpbb_on_page($template, $user, $base_url, $total_members, $config['topics_per_page'], $start),
+					'S_ON_PAGE'		=> $pagination->on_page($base_url, $total_members, $config['topics_per_page'], $start),
 					'GROUP_NAME'	=> ($group_row['group_type'] == GROUP_SPECIAL) ? $user->lang['G_' . $group_row['group_name']] : $group_row['group_name'],
 
 					'U_ACTION'			=> $this->u_action . "&amp;g=$group_id",
@@ -891,7 +895,7 @@ class acp_groups
 					break;
 				}
 			}
-			catch (phpbb_groupposition_exception $exception)
+			catch (\phpbb\groupposition\exception $exception)
 			{
 				trigger_error($user->lang($exception->getMessage()) . adm_back_link($this->u_action), E_USER_WARNING);
 			}
@@ -919,7 +923,7 @@ class acp_groups
 					break;
 				}
 			}
-			catch (phpbb_groupposition_exception $exception)
+			catch (\phpbb\groupposition\exception $exception)
 			{
 				trigger_error($user->lang($exception->getMessage()) . adm_back_link($this->u_action), E_USER_WARNING);
 			}
@@ -943,7 +947,7 @@ class acp_groups
 
 		if (($action == 'move_up' || $action == 'move_down') && $request->is_ajax())
 		{
-			$json_response = new phpbb_json_response;
+			$json_response = new \phpbb\json_response;
 			$json_response->send(array('success' => true));
 		}
 
@@ -961,7 +965,7 @@ class acp_groups
 				$template->assign_block_vars('legend', array(
 					'GROUP_NAME'	=> $group_name,
 					'GROUP_COLOUR'	=> ($row['group_colour']) ? '#' . $row['group_colour'] : '',
-					'GROUP_TYPE'	=> $user->lang[phpbb_groupposition_legend::group_type_language($row['group_type'])],
+					'GROUP_TYPE'	=> $user->lang[\phpbb\groupposition\legend::group_type_language($row['group_type'])],
 
 					'U_MOVE_DOWN'	=> "{$this->u_action}&amp;field=legend&amp;action=move_down&amp;g=" . $row['group_id'],
 					'U_MOVE_UP'		=> "{$this->u_action}&amp;field=legend&amp;action=move_up&amp;g=" . $row['group_id'],
@@ -1004,7 +1008,7 @@ class acp_groups
 			if ($row['group_id'])
 			{
 				$group_name = ($row['group_type'] == GROUP_SPECIAL) ? $user->lang['G_' . $row['group_name']] : $row['group_name'];
-				$group_type = $user->lang[phpbb_groupposition_teampage::group_type_language($row['group_type'])];
+				$group_type = $user->lang[\phpbb\groupposition\teampage::group_type_language($row['group_type'])];
 			}
 			else
 			{

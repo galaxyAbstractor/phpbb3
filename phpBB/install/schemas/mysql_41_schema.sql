@@ -491,6 +491,26 @@ CREATE TABLE phpbb_notifications (
 ) CHARACTER SET `utf8` COLLATE `utf8_bin`;
 
 
+# Table: 'phpbb_oauth_accounts'
+CREATE TABLE phpbb_oauth_accounts (
+	user_id mediumint(8) UNSIGNED DEFAULT '0' NOT NULL,
+	provider varchar(255) DEFAULT '' NOT NULL,
+	oauth_provider_id text NOT NULL,
+	PRIMARY KEY (user_id, provider)
+) CHARACTER SET `utf8` COLLATE `utf8_bin`;
+
+
+# Table: 'phpbb_oauth_tokens'
+CREATE TABLE phpbb_oauth_tokens (
+	user_id mediumint(8) UNSIGNED DEFAULT '0' NOT NULL,
+	session_id char(32) DEFAULT '' NOT NULL,
+	provider varchar(255) DEFAULT '' NOT NULL,
+	oauth_token mediumtext NOT NULL,
+	KEY user_id (user_id),
+	KEY provider (provider)
+) CHARACTER SET `utf8` COLLATE `utf8_bin`;
+
+
 # Table: 'phpbb_poll_options'
 CREATE TABLE phpbb_poll_options (
 	poll_option_id tinyint(4) DEFAULT '0' NOT NULL,

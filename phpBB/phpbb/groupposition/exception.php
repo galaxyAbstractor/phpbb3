@@ -7,17 +7,11 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\groupposition;
 
 /**
 * @package groupposition
 */
-class phpbb_groupposition_exception extends \Exception
+class exception extends \Exception
 {
 }

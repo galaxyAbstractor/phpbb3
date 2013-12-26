@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\di\pass;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -23,7 +17,7 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 * the services tagged with the appropriate name defined in the collection's
 * service_collection tag.
 */
-class phpbb_di_pass_collection_pass implements CompilerPassInterface
+class collection_pass implements CompilerPassInterface
 {
 	/**
 	* Modify the container before it is passed to the rest of the code

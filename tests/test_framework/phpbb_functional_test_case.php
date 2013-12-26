@@ -150,7 +150,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 	{
 		global $phpbb_root_path, $phpEx;
 		// so we don't reopen an open connection
-		if (!($this->db instanceof phpbb_db_driver))
+		if (!($this->db instanceof \phpbb\db\driver\driver))
 		{
 			$dbms = self::$config['dbms'];
 			$this->db = new $dbms();
@@ -163,7 +163,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 	{
 		if (!$this->cache)
 		{
-			$this->cache = new phpbb_cache_driver_file;
+			$this->cache = new \phpbb\cache\driver\file;
 		}
 
 		return $this->cache;
@@ -182,11 +182,11 @@ class phpbb_functional_test_case extends phpbb_test_case
 	{
 		global $phpbb_root_path, $phpEx;
 
-		$config = new phpbb_config(array());
+		$config = new \phpbb\config\config(array());
 		$db = $this->get_db();
-		$db_tools = new phpbb_db_tools($db);
+		$db_tools = new \phpbb\db\tools($db);
 
-		$migrator = new phpbb_db_migrator(
+		$migrator = new \phpbb\db\migrator(
 			$config,
 			$db,
 			$db_tools,
@@ -199,11 +199,11 @@ class phpbb_functional_test_case extends phpbb_test_case
 		$container = new phpbb_mock_container_builder();
 		$container->set('migrator', $migrator);
 
-		$extension_manager = new phpbb_extension_manager(
+		$extension_manager = new \phpbb\extension\manager(
 			$container,
 			$db,
 			$config,
-			new phpbb_filesystem(),
+			new phpbb\filesystem(),
 			self::$config['table_prefix'] . 'ext',
 			dirname(__FILE__) . '/',
 			$php_ext,
@@ -265,7 +265,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 		self::assertContains('Database configuration', $crawler->filter('#main')->text());
 		$form = $crawler->selectButton('submit')->form(array(
 			// Installer uses 3.0-style dbms name
-			'dbms'			=> str_replace('phpbb_db_driver_', '',  self::$config['dbms']),
+			'dbms'			=> str_replace('phpbb\db\driver\\', '',  self::$config['dbms']),
 			'dbhost'		=> self::$config['dbhost'],
 			'dbport'		=> self::$config['dbport'],
 			'dbname'		=> self::$config['dbname'],
@@ -471,7 +471,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 		// Required by unique_id
 		global $config;
 
-		$config = new phpbb_config(array());
+		$config = new \phpbb\config\config(array());
 		$config['rand_seed'] = '';
 		$config['rand_seed_last_update'] = time() + 600;
 
@@ -484,7 +484,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 		}
 		$cache = new phpbb_mock_null_cache;
 
-		$cache_driver = new phpbb_cache_driver_null();
+		$cache_driver = new \phpbb\cache\driver\null();
 		$phpbb_container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
 		$phpbb_container
 			->expects($this->any())
@@ -521,24 +521,21 @@ class phpbb_functional_test_case extends phpbb_test_case
 	{
 		global $db, $cache, $auth, $config, $phpbb_dispatcher, $phpbb_log, $phpbb_container, $phpbb_root_path, $phpEx;
 
-		$config = new phpbb_config(array());
+		$config = new \phpbb\config\config(array());
 		$config['coppa_enable'] = 0;
 
 		$db = $this->get_db();
 		$phpbb_dispatcher = new phpbb_mock_event_dispatcher();
-		$user = $this->getMock('phpbb_user');
-		$auth = $this->getMock('phpbb_auth');
+		$user = $this->getMock('\phpbb\user');
+		$auth = $this->getMock('\phpbb\auth\auth');
 
-		$phpbb_log = new phpbb_log($db, $user, $auth, $phpbb_dispatcher, $phpbb_root_path, 'adm/', $phpEx, LOG_TABLE);
+		$phpbb_log = new \phpbb\log\log($db, $user, $auth, $phpbb_dispatcher, $phpbb_root_path, 'adm/', $phpEx, LOG_TABLE);
 		$cache = new phpbb_mock_null_cache;
 
-		$cache_driver = new phpbb_cache_driver_null();
-		$phpbb_container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
-		$phpbb_container
-			->expects($this->any())
-			->method('get')
-			->with('cache.driver')
-			->will($this->returnValue($cache_driver));
+		$cache_driver = new \phpbb\cache\driver\null();
+		$phpbb_container = new phpbb_mock_container_builder();
+		$phpbb_container->set('cache.driver', $cache_driver);
+		$phpbb_container->set('notification_manager', new phpbb_mock_notification_manager());
 
 		if (!function_exists('utf_clean_string'))
 		{
@@ -563,18 +560,18 @@ class phpbb_functional_test_case extends phpbb_test_case
 	{
 		global $db, $cache, $auth, $config, $phpbb_dispatcher, $phpbb_log, $phpbb_container, $phpbb_root_path, $phpEx;
 
-		$config = new phpbb_config(array());
+		$config = new \phpbb\config\config(array());
 		$config['coppa_enable'] = 0;
 
 		$db = $this->get_db();
 		$phpbb_dispatcher = new phpbb_mock_event_dispatcher();
-		$user = $this->getMock('phpbb_user');
-		$auth = $this->getMock('phpbb_auth');
+		$user = $this->getMock('\phpbb\user');
+		$auth = $this->getMock('\phpbb\auth\auth');
 
-		$phpbb_log = new phpbb_log($db, $user, $auth, $phpbb_dispatcher, $phpbb_root_path, 'adm/', $phpEx, LOG_TABLE);
+		$phpbb_log = new \phpbb\log\log($db, $user, $auth, $phpbb_dispatcher, $phpbb_root_path, 'adm/', $phpEx, LOG_TABLE);
 		$cache = new phpbb_mock_null_cache;
 
-		$cache_driver = new phpbb_cache_driver_null();
+		$cache_driver = new \phpbb\cache\driver\null();
 		$phpbb_container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
 		$phpbb_container
 			->expects($this->any())
@@ -871,9 +868,10 @@ class phpbb_functional_test_case extends phpbb_test_case
 	* @param string $subject
 	* @param string $message
 	* @param array $additional_form_data Any additional form data to be sent in the request
-	* @return array post_id, topic_id
+	* @param string $expected Lang var of expected message after posting
+	* @return array|null post_id, topic_id if message is 'POST_STORED'
 	*/
-	public function create_topic($forum_id, $subject, $message, $additional_form_data = array())
+	public function create_topic($forum_id, $subject, $message, $additional_form_data = array(), $expected = 'POST_STORED')
 	{
 		$posting_url = "posting.php?mode=post&f={$forum_id}&sid={$this->sid}";
 
@@ -883,7 +881,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 			'post'			=> true,
 		), $additional_form_data);
 
-		return self::submit_post($posting_url, 'POST_TOPIC', $form_data);
+		return self::submit_post($posting_url, 'POST_TOPIC', $form_data, $expected);
 	}
 
 	/**
@@ -896,9 +894,10 @@ class phpbb_functional_test_case extends phpbb_test_case
 	* @param string $subject
 	* @param string $message
 	* @param array $additional_form_data Any additional form data to be sent in the request
-	* @return array post_id, topic_id
+	* @param string $expected Lang var of expected message after posting
+	* @return array|null post_id, topic_id if message is 'POST_STORED'
 	*/
-	public function create_post($forum_id, $topic_id, $subject, $message, $additional_form_data = array())
+	public function create_post($forum_id, $topic_id, $subject, $message, $additional_form_data = array(), $expected = 'POST_STORED')
 	{
 		$posting_url = "posting.php?mode=reply&f={$forum_id}&t={$topic_id}&sid={$this->sid}";
 
@@ -908,7 +907,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 			'post'			=> true,
 		), $additional_form_data);
 
-		return self::submit_post($posting_url, 'POST_REPLY', $form_data);
+		return self::submit_post($posting_url, 'POST_REPLY', $form_data, $expected);
 	}
 
 	/**
@@ -917,9 +916,10 @@ class phpbb_functional_test_case extends phpbb_test_case
 	* @param string $posting_url
 	* @param string $posting_contains
 	* @param array $form_data
-	* @return array post_id, topic_id
+	* @param string $expected Lang var of expected message after posting
+	* @return array|null post_id, topic_id if message is 'POST_STORED'
 	*/
-	protected function submit_post($posting_url, $posting_contains, $form_data)
+	protected function submit_post($posting_url, $posting_contains, $form_data, $expected = 'POST_STORED')
 	{
 		$this->add_lang('posting');
 
@@ -928,7 +928,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 
 		$hidden_fields = array(
 			$crawler->filter('[type="hidden"]')->each(function ($node, $i) {
-				return array('name' => $node->getAttribute('name'), 'value' => $node->getAttribute('value'));
+				return array('name' => $node->attr('name'), 'value' => $node->attr('value'));
 			}),
 		);
 
@@ -948,7 +948,12 @@ class phpbb_functional_test_case extends phpbb_test_case
 		// contained in one of the actual form fields that the browser sees (i.e. it ignores "hidden" inputs)
 		// Instead, I send it as a request with the submit button "post" set to true.
 		$crawler = self::request('POST', $posting_url, $form_data);
-		$this->assertContains($this->lang('POST_STORED'), $crawler->filter('html')->text());
+		$this->assertContainsLang($expected, $crawler->filter('html')->text());
+
+		if ($expected !== 'POST_STORED')
+		{
+			return;
+		}
 		$url = $crawler->selectLink($this->lang('VIEW_MESSAGE', '', ''))->link()->getUri();
 
 		return array(
@@ -957,7 +962,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 		);
 	}
 
-	/*
+	/**
 	* Returns the requested parameter from a URL
 	*
 	* @param	string	$url

@@ -7,20 +7,14 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\cache\driver;
 
 /**
 * ACM for eAccelerator
 * @package acm
 * @todo Missing locks from destroy() talk with David
 */
-class phpbb_cache_driver_eaccelerator extends phpbb_cache_driver_memory
+class eaccelerator extends \phpbb\cache\driver\memory
 {
 	var $extension = 'eaccelerator';
 	var $function = 'eaccelerator_get';

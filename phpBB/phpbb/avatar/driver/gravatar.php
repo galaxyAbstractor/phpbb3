@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\avatar\driver;
 
 /**
 * Handles avatars hosted at gravatar.com
 * @package phpBB3
 */
-class phpbb_avatar_driver_gravatar extends phpbb_avatar_driver
+class gravatar extends \phpbb\avatar\driver\driver
 {
 	/**
 	* The URL for the gravatar service
@@ -150,6 +144,14 @@ class phpbb_avatar_driver_gravatar extends phpbb_avatar_driver
 			'avatar_width' => $row['avatar_width'],
 			'avatar_height' => $row['avatar_height'],
 		);
+	}
+
+	/**
+	* @inheritdoc
+	*/
+	public function get_template_name()
+	{
+		return 'ucp_avatar_options_gravatar.html';
 	}
 
 	/**

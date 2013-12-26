@@ -22,17 +22,17 @@ if (!defined('IN_PHPBB'))
 /**
 * Create a new UrlMatcher class and dump it into the cache file
 *
-* @param phpbb_extension_finder $finder Extension finder
+* @param \phpbb\extension\finder $finder Extension finder
 * @param RequestContext $context Symfony RequestContext object
 * @param string $root_path Root path
 * @param string $php_ext PHP extension
 * @return null
 */
-function phpbb_get_url_matcher(phpbb_extension_finder $finder, RequestContext $context, $root_path, $php_ext)
+function phpbb_get_url_matcher(\phpbb\extension\finder $finder, RequestContext $context, $root_path, $php_ext)
 {
 	if (defined('DEBUG'))
 	{
-		return phpbb_create_url_matcher($finder, $context);
+		return phpbb_create_url_matcher($finder, $context, $root_path);
 	}
 
 	if (!phpbb_url_matcher_dumped($root_path, $php_ext))
@@ -46,15 +46,15 @@ function phpbb_get_url_matcher(phpbb_extension_finder $finder, RequestContext $c
 /**
 * Create a new UrlMatcher class and dump it into the cache file
 *
-* @param phpbb_extension_finder $finder Extension finder
+* @param \phpbb\extension\finder $finder Extension finder
 * @param string $root_path Root path
 * @param string $php_ext PHP extension
 * @return null
 */
-function phpbb_create_dumped_url_matcher(phpbb_extension_finder $finder, $root_path, $php_ext)
+function phpbb_create_dumped_url_matcher(\phpbb\extension\finder $finder, $root_path, $php_ext)
 {
-	$provider = new phpbb_controller_provider();
-	$routes = $provider->import_paths_from_finder($finder)->find();
+	$provider = new \phpbb\controller\provider();
+	$routes = $provider->import_paths_from_finder($finder)->find($root_path);
 	$dumper = new PhpMatcherDumper($routes);
 	$cached_url_matcher_dump = $dumper->dump(array(
 		'class'			=> 'phpbb_url_matcher',
@@ -66,14 +66,14 @@ function phpbb_create_dumped_url_matcher(phpbb_extension_finder $finder, $root_p
 /**
 * Create a non-cached UrlMatcher
 *
-* @param phpbb_extension_finder $finder Extension finder
+* @param \phpbb\extension\finder $finder Extension finder
 * @param RequestContext $context Symfony RequestContext object
 * @return UrlMatcher
 */
-function phpbb_create_url_matcher(phpbb_extension_finder $finder, RequestContext $context)
+function phpbb_create_url_matcher(\phpbb\extension\finder $finder, RequestContext $context, $root_path)
 {
-	$provider = new phpbb_controller_provider();
-	$routes = $provider->import_paths_from_finder($finder)->find();
+	$provider = new \phpbb\controller\provider();
+	$routes = $provider->import_paths_from_finder($finder)->find($root_path);
 	return new UrlMatcher($routes, $context);
 }
 

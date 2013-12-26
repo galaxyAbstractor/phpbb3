@@ -7,18 +7,12 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\template\twig;
 
 /**
 * This class holds all DEFINE variables from the current page load
 */
-class phpbb_template_twig_definition
+class definition
 {
 	/** @var array **/
 	protected $definitions = array();
@@ -39,7 +33,7 @@ class phpbb_template_twig_definition
 	*
 	* @param string $name
 	* @param mixed $value
-	* @return phpbb_template_twig_definition
+	* @return \phpbb\template\twig\definition
 	*/
 	public function set($name, $value)
 	{
@@ -53,7 +47,7 @@ class phpbb_template_twig_definition
 	*
 	* @param string $name
 	* @param string $value
-	* @return phpbb_template_twig_definition
+	* @return \phpbb\template\twig\definition
 	*/
 	public function append($name, $value)
 	{

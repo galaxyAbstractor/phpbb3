@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\notification\type;
 
 /**
 * Post notifications class
@@ -21,7 +15,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package notifications
 */
-class phpbb_notification_type_post extends phpbb_notification_type_base
+class post extends \phpbb\notification\type\base
 {
 	/**
 	* Get notification type name
@@ -189,6 +183,10 @@ class phpbb_notification_type_post extends phpbb_notification_type_base
 			'username'		=> $this->get_data('post_username'),
 		)), $responders);
 
+		$responders_cnt = sizeof($responders);
+		$responders = $this->trim_user_ary($responders);
+		$trimmed_responders_cnt = $responders_cnt - sizeof($responders);
+
 		foreach ($responders as $responder)
 		{
 			if ($responder['username'])
@@ -200,11 +198,18 @@ class phpbb_notification_type_post extends phpbb_notification_type_base
 				$usernames[] = $this->user_loader->get_username($responder['poster_id'], 'no_profile');
 			}
 		}
+		$lang_key = $this->language_key;
+
+		if ($trimmed_responders_cnt)
+		{
+			$lang_key .= '_TRIMMED';
+		}
 
 		return $this->user->lang(
-			$this->language_key,
-			implode(', ', $usernames),
-			censor_text($this->get_data('topic_title'))
+			$lang_key,
+			implode($this->user->lang['COMMA_SEPARATOR'], $usernames),
+			censor_text($this->get_data('topic_title')),
+			$trimmed_responders_cnt
 		);
 	}
 
@@ -240,7 +245,7 @@ class phpbb_notification_type_post extends phpbb_notification_type_base
 			'TOPIC_TITLE'				=> htmlspecialchars_decode(censor_text($this->get_data('topic_title'))),
 
 			'U_VIEW_POST'				=> generate_board_url() . "/viewtopic.{$this->php_ext}?p={$this->item_id}#p{$this->item_id}",
-			'U_NEWEST_POST'				=> generate_board_url() . "/viewtopic.{$this->php_ext}?f={$this->get_data('forum_id')}&t={$this->item_parent_id}&view=unread#unread",
+			'U_NEWEST_POST'				=> generate_board_url() . "/viewtopic.{$this->php_ext}?f={$this->get_data('forum_id')}&t={$this->item_parent_id}&e=1&view=unread#unread",
 			'U_TOPIC'					=> generate_board_url() . "/viewtopic.{$this->php_ext}?f={$this->get_data('forum_id')}&t={$this->item_parent_id}",
 			'U_VIEW_TOPIC'				=> generate_board_url() . "/viewtopic.{$this->php_ext}?f={$this->get_data('forum_id')}&t={$this->item_parent_id}",
 			'U_FORUM'					=> generate_board_url() . "/viewforum.{$this->php_ext}?f={$this->get_data('forum_id')}",
@@ -278,6 +283,22 @@ class phpbb_notification_type_post extends phpbb_notification_type_base
 			}
 		}
 
+		return $this->trim_user_ary($users);
+	}
+
+	/**
+	* Trim the user array passed down to 3 users if the array contains
+	* more than 4 users.
+	*
+	* @param array $users Array of users
+	* @return array Trimmed array of user_ids
+	*/
+	public function trim_user_ary($users)
+	{
+		if (sizeof($users) > 4)
+		{
+			array_splice($users, 3);
+		}
 		return $users;
 	}
 

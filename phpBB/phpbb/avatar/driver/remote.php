@@ -7,19 +7,13 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\avatar\driver;
 
 /**
 * Handles avatars hosted remotely
 * @package phpBB3
 */
-class phpbb_avatar_driver_remote extends phpbb_avatar_driver
+class remote extends \phpbb\avatar\driver\driver
 {
 	/**
 	* @inheritdoc
@@ -120,8 +114,39 @@ class phpbb_avatar_driver_remote extends phpbb_avatar_driver
 			include($this->phpbb_root_path . 'includes/functions_upload.' . $this->php_ext);
 		}
 
-		$types = fileupload::image_types();
-		$extension = strtolower(filespec::get_extension($url));
+		$types = \fileupload::image_types();
+		$extension = strtolower(\filespec::get_extension($url));
+
+		// Check if this is actually an image
+		if ($file_stream = @fopen($url, 'r'))
+		{
+			// Timeout after 1 second
+			stream_set_timeout($file_stream, 1);
+			$meta = stream_get_meta_data($file_stream);
+			foreach ($meta['wrapper_data'] as $header)
+			{
+				$header = preg_split('/ /', $header, 2);
+				if (strtr(strtolower(trim($header[0], ':')), '_', '-') === 'content-type')
+				{
+					if (strpos($header[1], 'image/') !== 0)
+					{
+						$error[] = 'AVATAR_URL_INVALID';
+						fclose($file_stream);
+						return false;
+					}
+					else
+					{
+						fclose($file_stream);
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			$error[] = 'AVATAR_URL_INVALID';
+			return false;
+		}
 
 		if (!empty($image_data) && (!isset($types[$image_data[2]]) || !in_array($extension, $types[$image_data[2]])))
 		{
@@ -160,5 +185,13 @@ class phpbb_avatar_driver_remote extends phpbb_avatar_driver
 			'avatar_width' => $width,
 			'avatar_height' => $height,
 		);
+	}
+
+	/**
+	* @inheritdoc
+	*/
+	public function get_template_name()
+	{
+		return 'ucp_avatar_options_remote.html';
 	}
 }

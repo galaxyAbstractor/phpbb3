@@ -34,9 +34,9 @@ class ucp_profile
 
 		$user->add_lang('posting');
 
-		$preview	= $request->variable('preview', false, false, phpbb_request_interface::POST);
-		$submit		= $request->variable('submit', false, false, phpbb_request_interface::POST);
-		$delete		= $request->variable('delete', false, false, phpbb_request_interface::POST);
+		$preview	= $request->variable('preview', false, false, \phpbb\request\request_interface::POST);
+		$submit		= $request->variable('submit', false, false, \phpbb\request\request_interface::POST);
+		$delete		= $request->variable('delete', false, false, \phpbb\request\request_interface::POST);
 		$error = $data = array();
 		$s_hidden_fields = '';
 
@@ -546,6 +546,9 @@ class ucp_profile
 				// Build custom bbcodes array
 				display_custom_bbcodes();
 
+				// Generate smiley listing
+				generate_smilies('inline', 0);
+
 			break;
 
 			case 'avatar':
@@ -564,7 +567,7 @@ class ucp_profile
 					$avatar_drivers = $phpbb_avatar_manager->get_enabled_drivers();
 
 					// This is normalised data, without the user_ prefix
-					$avatar_data = phpbb_avatar_manager::clean_row($user->data);
+					$avatar_data = \phpbb\avatar\manager::clean_row($user->data, 'user');
 
 					if ($submit)
 					{
@@ -600,7 +603,7 @@ class ucp_profile
 							}
 							else
 							{
-								if ($driver = $phpbb_avatar_manager->get_driver($user->data['user_avatar_type']))
+								if ($driver = $phpbb_avatar_manager->get_driver($avatar_data['avatar_type']))
 								{
 									$driver->delete($avatar_data);
 								}
@@ -655,10 +658,10 @@ class ucp_profile
 							));
 						}
 					}
-				}
 
-				// Replace "error" strings with their real, localised form
-				$error = $phpbb_avatar_manager->localize_errors($user, $error);
+					// Replace "error" strings with their real, localised form
+					$error = $phpbb_avatar_manager->localize_errors($user, $error);
+				}
 
 				$avatar = phpbb_get_user_avatar($user->data, 'USER_AVATAR', true);
 

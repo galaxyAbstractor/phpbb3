@@ -50,9 +50,9 @@ if (isset($_GET['avatar']))
 	require($phpbb_root_path . 'includes/utf/utf_tools.' . $phpEx);
 
 	// Setup class loader first
-	$phpbb_class_loader = new phpbb_class_loader('phpbb_', "{$phpbb_root_path}phpbb/", $phpEx);
+	$phpbb_class_loader = new \phpbb\class_loader('phpbb\\', "{$phpbb_root_path}phpbb/", $phpEx);
 	$phpbb_class_loader->register();
-	$phpbb_class_loader_ext = new phpbb_class_loader('phpbb_ext_', "{$phpbb_root_path}ext/", $phpEx);
+	$phpbb_class_loader_ext = new \phpbb\class_loader('\\', "{$phpbb_root_path}ext/", $phpEx);
 	$phpbb_class_loader_ext->register();
 
 	// Set up container
@@ -181,7 +181,7 @@ else
 	trigger_error('NO_ATTACHMENT_SELECTED');
 }
 
-$sql = 'SELECT attach_id, post_msg_id, topic_id, in_message, is_orphan, physical_filename, real_filename, extension, mimetype, filesize, filetime
+$sql = 'SELECT attach_id, post_msg_id, topic_id, in_message, poster_id, is_orphan, physical_filename, real_filename, extension, mimetype, filesize, filetime
 	FROM ' . ATTACHMENTS_TABLE . "
 	WHERE $sql_where";
 $result = $db->sql_query($sql);

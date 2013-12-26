@@ -71,7 +71,7 @@ function display_forums($root_data = '', $display_moderators = true, $return_mod
 					'MESSAGE_TITLE'		=> $user->lang['INFORMATION'],
 					'MESSAGE_TEXT'		=> $user->lang['FORUMS_MARKED']
 				);
-				$json_response = new phpbb_json_response();
+				$json_response = new \phpbb\json_response();
 				$json_response->send($data);
 			}
 
@@ -104,7 +104,7 @@ function display_forums($root_data = '', $display_moderators = true, $return_mod
 	}
 	else if ($config['load_anon_lastread'] || $user->data['is_registered'])
 	{
-		$tracking_topics = $request->variable($config['cookie_name'] . '_track', '', true, phpbb_request_interface::COOKIE);
+		$tracking_topics = $request->variable($config['cookie_name'] . '_track', '', true, \phpbb\request\request_interface::COOKIE);
 		$tracking_topics = ($tracking_topics) ? tracking_unserialize($tracking_topics) : array();
 
 		if (!$user->data['is_registered'])
@@ -346,7 +346,7 @@ function display_forums($root_data = '', $display_moderators = true, $return_mod
 					'MESSAGE_TITLE'		=> $user->lang['INFORMATION'],
 					'MESSAGE_TEXT'		=> $user->lang['FORUMS_MARKED']
 				);
-				$json_response = new phpbb_json_response();
+				$json_response = new \phpbb\json_response();
 				$json_response->send($data);
 			}
 
@@ -919,7 +919,7 @@ function topic_status(&$topic_row, $replies, $unread_topic, &$folder_img, &$fold
 
 /**
 * Assign/Build custom bbcodes for display in screens supporting using of bbcodes
-* The custom bbcodes buttons will be placed within the template block 'custom_codes'
+* The custom bbcodes buttons will be placed within the template block 'custom_tags'
 */
 function display_custom_bbcodes()
 {
@@ -928,11 +928,26 @@ function display_custom_bbcodes()
 	// Start counting from 22 for the bbcode ids (every bbcode takes two ids - opening/closing)
 	$num_predefined_bbcodes = 22;
 
-	$sql = 'SELECT bbcode_id, bbcode_tag, bbcode_helpline
-		FROM ' . BBCODES_TABLE . '
-		WHERE display_on_posting = 1
-		ORDER BY bbcode_tag';
-	$result = $db->sql_query($sql);
+	$sql_ary = array(
+		'SELECT'	=> 'b.bbcode_id, b.bbcode_tag, b.bbcode_helpline',
+		'FROM'		=> array(BBCODES_TABLE => 'b'),
+		'WHERE'		=> 'b.display_on_posting = 1',
+		'ORDER_BY'	=> 'b.bbcode_tag',
+	);
+
+	/**
+	* Event to modify the SQL query before custom bbcode data is queried
+	*
+	* @event core.display_custom_bbcodes_modify_sql
+	* @var	array	sql_ary					The SQL array to get the bbcode data
+	* @var	int		num_predefined_bbcodes	The number of predefined core bbcodes
+	*										(multiplied by factor of 2)
+	* @since 3.1.0-a3
+	*/
+	$vars = array('sql_ary', 'num_predefined_bbcodes');
+	extract($phpbb_dispatcher->trigger_event('core.display_custom_bbcodes_modify_sql', compact($vars)));
+
+	$result = $db->sql_query($db->sql_build_query('SELECT', $sql_ary));
 
 	$i = 0;
 	while ($row = $db->sql_fetchrow($result))
@@ -952,7 +967,7 @@ function display_custom_bbcodes()
 		);
 
 		/**
-		* Modify the template data block of a bbcode
+		* Event to modify the template data block of a custom bbcode
 		*
 		* This event is triggered once per bbcode
 		*
@@ -1164,10 +1179,15 @@ function watch_topic_forum($mode, &$s_watching, $user_id, $forum_id, $topic_id, 
 
 				if ($token && check_link_hash($token, "{$mode}_$match_id") || confirm_box(true))
 				{
-					if ($uid != $user_id || $request->variable('unwatch', '', false, phpbb_request_interface::GET) != $mode)
+					if ($uid != $user_id || $request->variable('unwatch', '', false, \phpbb\request\request_interface::GET) != $mode)
 					{
 						$redirect_url = append_sid("{$phpbb_root_path}view$mode.$phpEx", "$u_url=$match_id&amp;start=$start");
-						$message = $user->lang['ERR_UNWATCHING'] . '<br /><br />' . sprintf($user->lang['RETURN_' . strtoupper($mode)], '<a href="' . $redirect_url . '">', '</a>');
+						$message = $user->lang['ERR_UNWATCHING'];
+
+						if (!$request->is_ajax())
+						{
+							$message .= '<br /><br />' . $user->lang('RETURN_' . strtoupper($mode), '<a href="' . $redirect_url . '">', '</a>');
+						}
 						trigger_error($message);
 					}
 
@@ -1177,8 +1197,12 @@ function watch_topic_forum($mode, &$s_watching, $user_id, $forum_id, $topic_id, 
 					$db->sql_query($sql);
 
 					$redirect_url = append_sid("{$phpbb_root_path}view$mode.$phpEx", "$u_url=$match_id&amp;start=$start");
-					$message = $user->lang['NOT_WATCHING_' . strtoupper($mode)] . '<br /><br />';
-					$message .= sprintf($user->lang['RETURN_' . strtoupper($mode)], '<a href="' . $redirect_url . '">', '</a>');
+					$message = $user->lang['NOT_WATCHING_' . strtoupper($mode)];
+
+					if (!$request->is_ajax())
+					{
+						$message .= '<br /><br />' . $user->lang('RETURN_' . strtoupper($mode), '<a href="' . $redirect_url . '">', '</a>');
+					}
 					meta_refresh(3, $redirect_url);
 					trigger_error($message);
 				}
@@ -1229,10 +1253,15 @@ function watch_topic_forum($mode, &$s_watching, $user_id, $forum_id, $topic_id, 
 
 				if ($token && check_link_hash($token, "{$mode}_$match_id") || confirm_box(true))
 				{
-					if ($uid != $user_id || $request->variable('watch', '', false, phpbb_request_interface::GET) != $mode)
+					if ($uid != $user_id || $request->variable('watch', '', false, \phpbb\request\request_interface::GET) != $mode)
 					{
 						$redirect_url = append_sid("{$phpbb_root_path}view$mode.$phpEx", "$u_url=$match_id&amp;start=$start");
-						$message = $user->lang['ERR_WATCHING'] . '<br /><br />' . sprintf($user->lang['RETURN_' . strtoupper($mode)], '<a href="' . $redirect_url . '">', '</a>');
+						$message = $user->lang['ERR_WATCHING'];
+
+						if (!$request->is_ajax())
+						{
+							$message .= '<br /><br />' . $user->lang('RETURN_' . strtoupper($mode), '<a href="' . $redirect_url . '">', '</a>');
+						}
 						trigger_error($message);
 					}
 
@@ -1243,7 +1272,12 @@ function watch_topic_forum($mode, &$s_watching, $user_id, $forum_id, $topic_id, 
 					$db->sql_query($sql);
 
 					$redirect_url = append_sid("{$phpbb_root_path}view$mode.$phpEx", "$u_url=$match_id&amp;start=$start");
-					$message = $user->lang['ARE_WATCHING_' . strtoupper($mode)] . '<br /><br />' . sprintf($user->lang['RETURN_' . strtoupper($mode)], '<a href="' . $redirect_url . '">', '</a>');
+					$message = $user->lang['ARE_WATCHING_' . strtoupper($mode)];
+
+					if (!$request->is_ajax())
+					{
+						$message .= '<br /><br />' . $user->lang('RETURN_' . strtoupper($mode), '<a href="' . $redirect_url . '">', '</a>');
+					}
 					meta_refresh(3, $redirect_url);
 					trigger_error($message);
 				}
@@ -1272,8 +1306,8 @@ function watch_topic_forum($mode, &$s_watching, $user_id, $forum_id, $topic_id, 
 	}
 	else
 	{
-		if ((isset($_GET['unwatch']) && $request->variable('unwatch', '', false, phpbb_request_interface::GET) == $mode) ||
-			(isset($_GET['watch']) && $request->variable('watch', '', false, phpbb_request_interface::GET) == $mode))
+		if ((isset($_GET['unwatch']) && $request->variable('unwatch', '', false, \phpbb\request\request_interface::GET) == $mode) ||
+			(isset($_GET['watch']) && $request->variable('watch', '', false, \phpbb\request\request_interface::GET) == $mode))
 		{
 			login_box();
 		}
@@ -1352,7 +1386,7 @@ function get_user_rank($user_rank, $user_posts, &$rank_title, &$rank_img, &$rank
 */
 function phpbb_get_user_avatar($user_row, $alt = 'USER_AVATAR', $ignore_config = false)
 {
-	$row = phpbb_avatar_manager::clean_row($user_row);
+	$row = \phpbb\avatar\manager::clean_row($user_row, 'user');
 	return phpbb_get_avatar($row, $alt, $ignore_config);
 }
 
@@ -1367,14 +1401,14 @@ function phpbb_get_user_avatar($user_row, $alt = 'USER_AVATAR', $ignore_config =
 */
 function phpbb_get_group_avatar($user_row, $alt = 'GROUP_AVATAR', $ignore_config = false)
 {
-	$row = phpbb_avatar_manager::clean_row($user_row);
+	$row = \phpbb\avatar\manager::clean_row($user_row, 'group');
 	return phpbb_get_avatar($row, $alt, $ignore_config);
 }
 
 /**
 * Get avatar
 *
-* @param array $row Row cleaned by phpbb_avatar_driver::clean_row
+* @param array $row Row cleaned by \phpbb\avatar\driver\driver::clean_row
 * @param string $alt Optional language string for alt tag within image, can be a language key or text
 * @param bool $ignore_config Ignores the config-setting, to be still able to view the avatar in the UCP
 *
@@ -1445,6 +1479,8 @@ function phpbb_gen_download_links($param_key, $param_val, $phpbb_root_path, $php
 	}
 
 	$methods = compress::methods();
+	// Sort by preferred type.
+	$methods = array_intersect(array('.zip', '.tar.bz2', '.tar.gz', '.tar'), $methods);
 	$links = array();
 
 	foreach ($methods as $method)

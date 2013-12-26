@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\notification\type;
 
 /**
 * Topic approved notifications class
@@ -21,7 +15,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package notifications
 */
-class phpbb_notification_type_approve_topic extends phpbb_notification_type_topic
+class approve_topic extends \phpbb\notification\type\topic
 {
 	/**
 	* Get notification type name
@@ -32,7 +26,7 @@ class phpbb_notification_type_approve_topic extends phpbb_notification_type_topi
 	{
 		return 'approve_topic';
 	}
-	
+
 	/**
 	* Language key used to output the text
 	*

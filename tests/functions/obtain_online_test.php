@@ -21,8 +21,9 @@ class phpbb_functions_obtain_online_test extends phpbb_database_test_case
 	{
 		parent::setUp();
 
-		global $config, $db;
+		global $config, $db, $user;
 
+		$user = new StdClass;
 		$db = $this->db = $this->new_dbal();
 		$config = array(
 			'load_online_time'	=> 5,
@@ -160,7 +161,7 @@ class phpbb_functions_obtain_online_test extends phpbb_database_test_case
 		$config['load_online_guests'] = $display_guests;
 		$user = new phpbb_mock_lang();
 		$user->lang = $this->load_language();
-		$auth = $this->getMock('phpbb_auth');
+		$auth = $this->getMock('\phpbb\auth\auth');
 		$acl_get_map = array(
 			array('u_viewonline', true),
 			array('u_viewprofile', true),

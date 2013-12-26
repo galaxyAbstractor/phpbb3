@@ -1,16 +1,8 @@
 <!-- INCLUDE overall_header.html -->
 
-<script type="text/javascript">
-// <![CDATA[
-	onload_functions.push(function () {
-		document.getElementById("keywords").focus();
-	});
-// ]]>
-</script>
-
 <h2 class="solo">{L_SEARCH}</h2>
 
-<form method="get" action="{S_SEARCH_ACTION}">
+<form method="get" action="{S_SEARCH_ACTION}" data-focus="keywords">
 
 <div class="panel">
 	<div class="inner">
@@ -103,7 +95,7 @@
 <div class="forumbg forumbg-table">
 	<div class="inner">
 
-	<table class="table1" cellspacing="1">
+	<table class="table1">
 	<thead>
 	<tr>
 		<th colspan="2" class="name">{L_RECENT_SEARCHES}</th>
@@ -113,7 +105,7 @@
 	<!-- BEGIN recentsearch -->
 		<tr class="<!-- IF recentsearch.S_ROW_COUNT is even -->bg1<!-- ELSE -->bg2<!-- ENDIF -->">
 			<td><a href="{recentsearch.U_KEYWORDS}">{recentsearch.KEYWORDS}</a></td>
-			<td class="active"><span>&nbsp;{recentsearch.TIME}</span></td>
+			<td class="active">{recentsearch.TIME}</td>
 		</tr>
 	<!-- BEGINELSE -->
 		<tr class="bg1">

@@ -7,13 +7,7 @@
 *
 */
 
-/**
-* @ignore
-*/
-if (!defined('IN_PHPBB'))
-{
-	exit;
-}
+namespace phpbb\feed;
 
 /**
 * 'All Forums' feed
@@ -23,7 +17,7 @@ if (!defined('IN_PHPBB'))
 *
 * @package phpBB3
 */
-class phpbb_feed_forums extends phpbb_feed_base
+class forums extends \phpbb\feed\base
 {
 	var $num_items	= 0;
 

@@ -90,12 +90,20 @@ class install_convert extends module
 	function main($mode, $sub)
 	{
 		global $lang, $template, $phpbb_root_path, $phpEx, $cache, $config, $language, $table_prefix;
-		global $convert;
+		global $convert, $request, $phpbb_container;
 
 		$this->tpl_name = 'install_convert';
 		$this->mode = $mode;
 
 		$convert = new convert($this->p_master);
+
+		// Enable super globals to prevent issues with the new \phpbb\request\request object
+		$request->enable_super_globals();
+		// Create a normal container now
+		$phpbb_container = phpbb_create_default_container($phpbb_root_path, $phpEx);
+
+		// Create cache
+		$cache = $phpbb_container->get('cache');
 
 		switch ($sub)
 		{
@@ -130,7 +138,7 @@ class install_convert extends module
 				unset($dbpasswd);
 
 				// We need to fill the config to let internal functions correctly work
-				$config = new phpbb_config_db($db, new phpbb_cache_driver_null, CONFIG_TABLE);
+				$config = new \phpbb\config\db($db, new \phpbb\cache\driver\null, CONFIG_TABLE);
 				set_config(null, null, null, $config);
 				set_config_count(null, null, null, $config);
 
@@ -345,7 +353,7 @@ class install_convert extends module
 		$this->page_title = $lang['STAGE_SETTINGS'];
 
 		// We need to fill the config to let internal functions correctly work
-		$config = new phpbb_config_db($db, new phpbb_cache_driver_null, CONFIG_TABLE);
+		$config = new \phpbb\config\db($db, new \phpbb\cache\driver\null, CONFIG_TABLE);
 		set_config(null, null, null, $config);
 		set_config_count(null, null, null, $config);
 
@@ -418,6 +426,7 @@ class install_convert extends module
 			{
 				$error[] = sprintf($lang['TABLE_PREFIX_SAME'], $src_table_prefix);
 			}
+			$src_dbms  = phpbb_convert_30_dbms_to_31($src_dbms);
 
 			// Check table prefix
 			if (!sizeof($error))
@@ -586,7 +595,7 @@ class install_convert extends module
 		unset($dbpasswd);
 
 		// We need to fill the config to let internal functions correctly work
-		$config = new phpbb_config_db($db, new phpbb_cache_driver_null, CONFIG_TABLE);
+		$config = new \phpbb\config\db($db, new \phpbb\cache\driver\null, CONFIG_TABLE);
 		set_config(null, null, null, $config);
 		set_config_count(null, null, null, $config);
 
@@ -739,7 +748,7 @@ class install_convert extends module
 		// For conversions we are a bit less strict and set to a search backend we know exist...
 		if (!class_exists($search_type))
 		{
-			$search_type = 'phpbb_search_fulltext_native';
+			$search_type = '\phpbb\search\fulltext_native';
 			set_config('search_type', $search_type);
 		}
 
@@ -1537,7 +1546,7 @@ class install_convert extends module
 	function finish_conversion()
 	{
 		global $db, $phpbb_root_path, $phpEx, $convert, $config, $language, $user, $template;
-		global $cache, $auth;
+		global $cache, $auth, $phpbb_container, $phpbb_log;
 
 		$db->sql_query('DELETE FROM ' . CONFIG_TABLE . "
 			WHERE config_name = 'convert_progress'
@@ -1550,6 +1559,7 @@ class install_convert extends module
 		phpbb_cache_moderators($db, $cache, $auth);
 
 		// And finally, add a note to the log
+		$phpbb_log = $phpbb_container->get('log');
 		add_log('admin', 'LOG_INSTALL_CONVERTED', $convert->convertor_data['forum_name'], $config['version']);
 
 		$url = $this->p_master->module_url . "?mode={$this->mode}&amp;sub=final&amp;language=$language";
