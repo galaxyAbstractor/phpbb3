@@ -746,8 +746,6 @@ class ucp_profile
 				while ($row = $db->sql_fetchrow($result))
 				{
 					$template->assign_block_vars('apikeys', array(
-						'errors' => $error,
-
 						'KEY' => $row['key_id'],
 						'KEY_NAME' => $row['name'],
 					));
