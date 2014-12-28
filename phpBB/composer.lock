@@ -3,7 +3,7 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "9b67c6972893573e7a98a0123b4af56b",
+    "hash": "2faf4ba24774c0d51cff4b78d4a81a68",
     "packages": [
         {
             "name": "lusitanian/oauth",
@@ -788,53 +788,6 @@
             "description": "Symfony Security Component - CSRF Library",
             "homepage": "http://symfony.com",
             "time": "2014-05-12 09:28:39"
-        },
-        {
-            "name": "symfony/serializer",
-            "version": "v2.5.7",
-            "target-dir": "Symfony/Component/Serializer",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/symfony/Serializer.git",
-                "reference": "3240eb026305a9b690fc9d18f626cc90162467e1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Serializer/zipball/3240eb026305a9b690fc9d18f626cc90162467e1",
-                "reference": "3240eb026305a9b690fc9d18f626cc90162467e1",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.3"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "2.5-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "Symfony\\Component\\Serializer\\": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Symfony Community",
-                    "homepage": "http://symfony.com/contributors"
-                },
-                {
-                    "name": "Fabien Potencier",
-                    "email": "fabien@symfony.com"
-                }
-            ],
-            "description": "Symfony Serializer Component",
-            "homepage": "http://symfony.com",
-            "time": "2014-11-20 13:22:25"
         },
         {
             "name": "symfony/twig-bridge",
