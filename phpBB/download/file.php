@@ -88,12 +88,8 @@ if (isset($_GET['avatar']))
 
 	unset($dbpasswd);
 
-	request_var('', 0, false, false, $request);
-
 	/* @var $config \phpbb\config\config */
 	$config = $phpbb_container->get('config');
-	set_config(null, null, null, $config);
-	set_config_count(null, null, null, $config);
 
 	// load extensions
 	/* @var $phpbb_extension_manager \phpbb\extension\manager */
@@ -105,7 +101,7 @@ if (isset($_GET['avatar']))
 	/* @var $phpbb_avatar_manager \phpbb\avatar\manager */
 	$phpbb_avatar_manager = $phpbb_container->get('avatar.manager');
 
-	$filename = request_var('avatar', '');
+	$filename = $request->variable('avatar', '');
 	$avatar_group = false;
 	$exit = false;
 
@@ -156,9 +152,9 @@ if (isset($_GET['avatar']))
 include($phpbb_root_path . 'common.' . $phpEx);
 require($phpbb_root_path . 'includes/functions_download' . '.' . $phpEx);
 
-$attach_id = request_var('id', 0);
-$mode = request_var('mode', '');
-$thumbnail = request_var('t', false);
+$attach_id = $request->variable('id', 0);
+$mode = $request->variable('mode', '');
+$thumbnail = $request->variable('t', false);
 
 // Start session management, do not update session page.
 $user->session_begin(false);

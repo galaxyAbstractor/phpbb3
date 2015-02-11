@@ -64,135 +64,6 @@ function set_var(&$result, $var, $type, $multibyte = false)
 }
 
 /**
-* Wrapper function of \phpbb\request\request::variable which exists for backwards compatability.
-* See {@link \phpbb\request\request_interface::variable \phpbb\request\request_interface::variable} for
-* documentation of this function's use.
-*
-* @deprecated
-* @param	mixed			$var_name	The form variable's name from which data shall be retrieved.
-* 										If the value is an array this may be an array of indizes which will give
-* 										direct access to a value at any depth. E.g. if the value of "var" is array(1 => "a")
-* 										then specifying array("var", 1) as the name will return "a".
-* 										If you pass an instance of {@link \phpbb\request\request_interface phpbb_request_interface}
-* 										as this parameter it will overwrite the current request class instance. If you do
-* 										not do so, it will create its own instance (but leave superglobals enabled).
-* @param	mixed			$default	A default value that is returned if the variable was not set.
-* 										This function will always return a value of the same type as the default.
-* @param	bool			$multibyte	If $default is a string this paramater has to be true if the variable may contain any UTF-8 characters
-*										Default is false, causing all bytes outside the ASCII range (0-127) to be replaced with question marks
-* @param	bool			$cookie		This param is mapped to \phpbb\request\request_interface::COOKIE as the last param for
-* 										\phpbb\request\request_interface::variable for backwards compatability reasons.
-* @param	\phpbb\request\request_interface|null|false	If an instance of \phpbb\request\request_interface is given the instance is stored in
-*										a static variable and used for all further calls where this parameters is null. Until
-*										the function is called with an instance it automatically creates a new \phpbb\request\request
-*										instance on every call. By passing false this per-call instantiation can be restored
-*										after having passed in a \phpbb\request\request_interface instance.
-*
-* @return	mixed	The value of $_REQUEST[$var_name] run through {@link set_var set_var} to ensure that the type is the
-* 					the same as that of $default. If the variable is not set $default is returned.
-*/
-function request_var($var_name, $default, $multibyte = false, $cookie = false, $request = null)
-{
-	// This is all just an ugly hack to add "Dependency Injection" to a function
-	// the only real code is the function call which maps this function to a method.
-	static $static_request = null;
-
-	if ($request instanceof \phpbb\request\request_interface)
-	{
-		$static_request = $request;
-
-		if (empty($var_name))
-		{
-			return;
-		}
-	}
-	else if ($request === false)
-	{
-		$static_request = null;
-
-		if (empty($var_name))
-		{
-			return;
-		}
-	}
-
-	$tmp_request = $static_request;
-
-	// no request class set, create a temporary one ourselves to keep backwards compatability
-	if ($tmp_request === null)
-	{
-		// false param: enable super globals, so the created request class does not
-		// make super globals inaccessible everywhere outside this function.
-		$tmp_request = new \phpbb\request\request(new \phpbb\request\type_cast_helper(), false);
-	}
-
-	return $tmp_request->variable($var_name, $default, $multibyte, ($cookie) ? \phpbb\request\request_interface::COOKIE : \phpbb\request\request_interface::REQUEST);
-}
-
-/**
-* Sets a configuration option's value.
-*
-* Please note that this function does not update the is_dynamic value for
-* an already existing config option.
-*
-* @param string $config_name   The configuration option's name
-* @param string $config_value  New configuration value
-* @param bool   $is_dynamic    Whether this variable should be cached (false) or
-*                              if it changes too frequently (true) to be
-*                              efficiently cached.
-*
-* @return null
-*
-* @deprecated
-*/
-function set_config($config_name, $config_value, $is_dynamic = false, \phpbb\config\config $set_config = null)
-{
-	static $config = null;
-
-	if ($set_config !== null)
-	{
-		$config = $set_config;
-
-		if (empty($config_name))
-		{
-			return;
-		}
-	}
-
-	$config->set($config_name, $config_value, !$is_dynamic);
-}
-
-/**
-* Increments an integer config value directly in the database.
-*
-* @param string $config_name   The configuration option's name
-* @param int    $increment     Amount to increment by
-* @param bool   $is_dynamic    Whether this variable should be cached (false) or
-*                              if it changes too frequently (true) to be
-*                              efficiently cached.
-*
-* @return null
-*
-* @deprecated
-*/
-function set_config_count($config_name, $increment, $is_dynamic = false, \phpbb\config\config $set_config = null)
-{
-	static $config = null;
-
-	if ($set_config !== null)
-	{
-		$config = $set_config;
-
-		if (empty($config_name))
-		{
-			return;
-		}
-	}
-
-	$config->increment($config_name, $increment, !$is_dynamic);
-}
-
-/**
 * Generates an alphanumeric random string of given length
 *
 * @return string
@@ -235,8 +106,8 @@ function unique_id($extra = 'c')
 
 	if ($dss_seeded !== true && ($config['rand_seed_last_update'] < time() - rand(1,10)))
 	{
-		set_config('rand_seed_last_update', time(), true);
-		set_config('rand_seed', $config['rand_seed'], true);
+		$config->set('rand_seed_last_update', time(), false);
+		$config->set('rand_seed', $config['rand_seed'], false);
 		$dss_seeded = true;
 	}
 
@@ -1149,9 +1020,42 @@ function phpbb_timezone_select($template, $user, $default = '', $truncate = fals
 function markread($mode, $forum_id = false, $topic_id = false, $post_time = 0, $user_id = 0)
 {
 	global $db, $user, $config;
-	global $request, $phpbb_container;
+	global $request, $phpbb_container, $phpbb_dispatcher;
 
 	$post_time = ($post_time === 0 || $post_time > time()) ? time() : (int) $post_time;
+
+	$should_markread = true;
+
+	/**
+	 * This event is used for performing actions directly before marking forums,
+	 * topics or posts as read.
+	 * 
+	 * It is also possible to prevent the marking. For that, the $should_markread parameter
+	 * should be set to FALSE.
+	 *
+	 * @event core.markread_before
+	 * @var	string	mode				Variable containing marking mode value
+	 * @var	mixed	forum_id			Variable containing forum id, or false
+	 * @var	mixed	topic_id			Variable containing topic id, or false
+	 * @var	int		post_time			Variable containing post time
+	 * @var	int		user_id				Variable containing the user id
+	 * @var	bool	should_markread		Flag indicating if the markread should be done or not.
+	 * @since 3.1.4-RC1
+	 */
+	$vars = array(
+		'mode',
+		'forum_id',
+		'topic_id',
+		'post_time',
+		'user_id',
+		'should_markread',
+	);
+	extract($phpbb_dispatcher->trigger_event('core.markread_before', compact($vars)));
+
+	if (!$should_markread)
+	{
+		return;
+	}
 
 	if ($mode == 'all')
 	{
@@ -1648,7 +1552,8 @@ function get_complete_topic_tracking($forum_id, $topic_ids, $global_announce_lis
 */
 function get_unread_topics($user_id = false, $sql_extra = '', $sql_sort = '', $sql_limit = 1001, $sql_limit_offset = 0)
 {
-	global $config, $db, $user;
+	global $config, $db, $user, $request;
+	global $phpbb_dispatcher;
 
 	$user_id = ($user_id === false) ? (int) $user->data['user_id'] : (int) $user_id;
 
@@ -1692,6 +1597,24 @@ function get_unread_topics($user_id = false, $sql_extra = '', $sql_sort = '', $s
 				$sql_sort",
 		);
 
+		/**
+		 * Change SQL query for fetching unread topics data
+		 *
+		 * @event core.get_unread_topics_modify_sql
+		 * @var array     sql_array    Fully assembled SQL query with keys SELECT, FROM, LEFT_JOIN, WHERE
+		 * @var int       last_mark    User's last_mark time
+		 * @var string    sql_extra    Extra WHERE SQL statement
+		 * @var string    sql_sort     ORDER BY SQL sorting statement
+		 * @since 3.1.4-RC1
+		 */
+		$vars = array(
+			'sql_array',
+			'last_mark',
+			'sql_extra',
+			'sql_sort',
+		);
+		extract($phpbb_dispatcher->trigger_event('core.get_unread_topics_modify_sql', compact($vars)));
+
 		$sql = $db->sql_build_query('SELECT', $sql_array);
 		$result = $db->sql_query_limit($sql, $sql_limit, $sql_limit_offset);
 
@@ -1708,7 +1631,7 @@ function get_unread_topics($user_id = false, $sql_extra = '', $sql_sort = '', $s
 
 		if (empty($tracking_topics))
 		{
-			$tracking_topics = request_var($config['cookie_name'] . '_track', '', false, true);
+			$tracking_topics = $request->variable($config['cookie_name'] . '_track', '', false, \phpbb\request\request_interface::COOKIE);
 			$tracking_topics = ($tracking_topics) ? tracking_unserialize($tracking_topics) : array();
 		}
 
@@ -2398,26 +2321,7 @@ function build_url($strip_vars = false)
 {
 	global $config, $user, $phpbb_path_helper;
 
-	$php_ext = $phpbb_path_helper->get_php_ext();
-	$page = $user->page['page'];
-
-	// We need to be cautious here.
-	// On some situations, the redirect path is an absolute URL, sometimes a relative path
-	// For a relative path, let's prefix it with $phpbb_root_path to point to the correct location,
-	// else we use the URL directly.
-	$url_parts = parse_url($page);
-
-	// URL
-	if ($url_parts === false || empty($url_parts['scheme']) || empty($url_parts['host']))
-	{
-		// Remove 'app.php/' from the page, when rewrite is enabled
-		if ($config['enable_mod_rewrite'] && strpos($page, 'app.' . $php_ext . '/') === 0)
-		{
-			$page = substr($page, strlen('app.' . $php_ext . '/'));
-		}
-
-		$page = $phpbb_path_helper->get_phpbb_root_path() . $page;
-	}
+	$page = $phpbb_path_helper->get_valid_page($user->page['page'], $config['enable_mod_rewrite']);
 
 	// Append SID
 	$redirect = append_sid($page, false, false);
@@ -2659,7 +2563,7 @@ function check_form_key($form_name, $timespan = false)
 function confirm_box($check, $title = '', $hidden = '', $html_body = 'confirm_body.html', $u_action = '')
 {
 	global $user, $template, $db, $request;
-	global $phpEx, $phpbb_root_path, $request;
+	global $config, $phpbb_path_helper;
 
 	if (isset($_POST['cancel']))
 	{
@@ -2670,9 +2574,9 @@ function confirm_box($check, $title = '', $hidden = '', $html_body = 'confirm_bo
 
 	if ($check && $confirm)
 	{
-		$user_id = request_var('confirm_uid', 0);
-		$session_id = request_var('sess', '');
-		$confirm_key = request_var('confirm_key', '');
+		$user_id = $request->variable('confirm_uid', 0);
+		$session_id = $request->variable('sess', '');
+		$confirm_key = $request->variable('confirm_key', '');
 
 		if ($user_id != $user->data['user_id'] || $session_id != $user->session_id || !$confirm_key || !$user->data['user_last_confirm_key'] || $confirm_key != $user->data['user_last_confirm_key'])
 		{
@@ -2714,15 +2618,15 @@ function confirm_box($check, $title = '', $hidden = '', $html_body = 'confirm_bo
 	);
 
 	// If activation key already exist, we better do not re-use the key (something very strange is going on...)
-	if (request_var('confirm_key', ''))
+	if ($request->variable('confirm_key', ''))
 	{
 		// This should not occur, therefore we cancel the operation to safe the user
 		return false;
 	}
 
 	// re-add sid / transform & to &amp; for user->page (user->page is always using &)
-	$use_page = ($u_action) ? $phpbb_root_path . $u_action : $phpbb_root_path . str_replace('&', '&amp;', $user->page['page']);
-	$u_action = reapply_sid($use_page);
+	$use_page = ($u_action) ? $u_action : str_replace('&', '&amp;', $user->page['page']);
+	$u_action = reapply_sid($phpbb_path_helper->get_valid_page($use_page, $config['enable_mod_rewrite']));
 	$u_action .= ((strpos($u_action, '?') === false) ? '?' : '&amp;') . 'confirm_key=' . $confirm_key;
 
 	$template->assign_vars(array(
@@ -2770,7 +2674,7 @@ function confirm_box($check, $title = '', $hidden = '', $html_body = 'confirm_bo
 function login_box($redirect = '', $l_explain = '', $l_success = '', $admin = false, $s_display = true)
 {
 	global $db, $user, $template, $auth, $phpEx, $phpbb_root_path, $config;
-	global $request, $phpbb_container, $phpbb_dispatcher;
+	global $request, $phpbb_container, $phpbb_dispatcher, $phpbb_log;
 
 	$err = '';
 
@@ -2787,7 +2691,7 @@ function login_box($redirect = '', $l_explain = '', $l_success = '', $admin = fa
 		// anonymous/inactive users are never able to go to the ACP even if they have the relevant permissions
 		if ($user->data['is_registered'])
 		{
-			add_log('admin', 'LOG_ADMIN_AUTH_FAIL');
+			$phpbb_log->add('admin', $user->data['user_id'], $user->ip, 'LOG_ADMIN_AUTH_FAIL');
 		}
 		trigger_error('NO_AUTH_ADMIN');
 	}
@@ -2797,13 +2701,13 @@ function login_box($redirect = '', $l_explain = '', $l_success = '', $admin = fa
 		// Get credential
 		if ($admin)
 		{
-			$credential = request_var('credential', '');
+			$credential = $request->variable('credential', '');
 
 			if (strspn($credential, 'abcdef0123456789') !== strlen($credential) || strlen($credential) != 32)
 			{
 				if ($user->data['is_registered'])
 				{
-					add_log('admin', 'LOG_ADMIN_AUTH_FAIL');
+					$phpbb_log->add('admin', $user->data['user_id'], $user->ip, 'LOG_ADMIN_AUTH_FAIL');
 				}
 				trigger_error('NO_AUTH_ADMIN');
 			}
@@ -2815,7 +2719,7 @@ function login_box($redirect = '', $l_explain = '', $l_success = '', $admin = fa
 			$password	= $request->untrimmed_variable('password', '', true);
 		}
 
-		$username	= request_var('username', '', true);
+		$username	= $request->variable('username', '', true);
 		$autologin	= $request->is_set_post('autologin');
 		$viewonline = (int) !$request->is_set_post('viewonline');
 		$admin 		= ($admin) ? 1 : 0;
@@ -2825,7 +2729,7 @@ function login_box($redirect = '', $l_explain = '', $l_success = '', $admin = fa
 		if ($admin && utf8_clean_string($username) != utf8_clean_string($user->data['username']))
 		{
 			// We log the attempt to use a different username...
-			add_log('admin', 'LOG_ADMIN_AUTH_FAIL');
+			$phpbb_log->add('admin', $user->data['user_id'], $user->ip, 'LOG_ADMIN_AUTH_FAIL');
 			trigger_error('NO_AUTH_ADMIN_USER_DIFFER');
 		}
 
@@ -2838,7 +2742,7 @@ function login_box($redirect = '', $l_explain = '', $l_success = '', $admin = fa
 		{
 			if ($result['status'] == LOGIN_SUCCESS)
 			{
-				add_log('admin', 'LOG_ADMIN_AUTH_SUCCESS');
+				$phpbb_log->add('admin', $user->data['user_id'], $user->ip, 'LOG_ADMIN_AUTH_SUCCESS');
 			}
 			else
 			{
@@ -2846,7 +2750,7 @@ function login_box($redirect = '', $l_explain = '', $l_success = '', $admin = fa
 				// anonymous/inactive users are never able to go to the ACP even if they have the relevant permissions
 				if ($user->data['is_registered'])
 				{
-					add_log('admin', 'LOG_ADMIN_AUTH_FAIL');
+					$phpbb_log->add('admin', $user->data['user_id'], $user->ip, 'LOG_ADMIN_AUTH_FAIL');
 				}
 			}
 		}
@@ -2854,7 +2758,7 @@ function login_box($redirect = '', $l_explain = '', $l_success = '', $admin = fa
 		// The result parameter is always an array, holding the relevant information...
 		if ($result['status'] == LOGIN_SUCCESS)
 		{
-			$redirect = request_var('redirect', "{$phpbb_root_path}index.$phpEx");
+			$redirect = $request->variable('redirect', "{$phpbb_root_path}index.$phpEx");
 
 			/**
 			* This event allows an extension to modify the redirection when a user successfully logs in
@@ -3214,52 +3118,6 @@ function parse_cfg_file($filename, $lines = false)
 	}
 
 	return $parsed_items;
-}
-
-/**
-* Add log entry
-*
-* @param	string	$mode				The mode defines which log_type is used and from which log the entry is retrieved
-* @param	int		$forum_id			Mode 'mod' ONLY: forum id of the related item, NOT INCLUDED otherwise
-* @param	int		$topic_id			Mode 'mod' ONLY: topic id of the related item, NOT INCLUDED otherwise
-* @param	int		$reportee_id		Mode 'user' ONLY: user id of the reportee, NOT INCLUDED otherwise
-* @param	string	$log_operation		Name of the operation
-* @param	array	$additional_data	More arguments can be added, depending on the log_type
-*
-* @return	int|bool		Returns the log_id, if the entry was added to the database, false otherwise.
-*
-* @deprecated	Use $phpbb_log->add() instead
-*/
-function add_log()
-{
-	global $phpbb_log, $user;
-
-	$args = func_get_args();
-	$mode = array_shift($args);
-
-	// This looks kind of dirty, but add_log has some additional data before the log_operation
-	$additional_data = array();
-	switch ($mode)
-	{
-		case 'admin':
-		case 'critical':
-		break;
-		case 'mod':
-			$additional_data['forum_id'] = array_shift($args);
-			$additional_data['topic_id'] = array_shift($args);
-		break;
-		case 'user':
-			$additional_data['reportee_id'] = array_shift($args);
-		break;
-	}
-
-	$log_operation = array_shift($args);
-	$additional_data = array_merge($additional_data, $args);
-
-	$user_id = (empty($user->data)) ? ANONYMOUS : $user->data['user_id'];
-	$user_ip = (empty($user->ip)) ? '' : $user->ip;
-
-	return $phpbb_log->add($mode, $user_id, $user_ip, $log_operation, time(), $additional_data);
 }
 
 /**
@@ -3801,7 +3659,7 @@ function phpbb_checkdnsrr($host, $type = 'MX')
 function msg_handler($errno, $msg_text, $errfile, $errline)
 {
 	global $cache, $db, $auth, $template, $config, $user, $request;
-	global $phpEx, $phpbb_root_path, $msg_title, $msg_long_text;
+	global $phpEx, $phpbb_root_path, $msg_title, $msg_long_text, $phpbb_log;
 
 	// Do not display notices if we suppress them via @
 	if (error_reporting() == 0 && $errno != E_USER_ERROR && $errno != E_USER_WARNING && $errno != E_USER_NOTICE)
@@ -3837,7 +3695,7 @@ function msg_handler($errno, $msg_text, $errfile, $errline)
 				// we are writing an image - the user won't see the debug, so let's place it in the log
 				if (defined('IMAGE_OUTPUT') || defined('IN_CRON'))
 				{
-					add_log('critical', 'LOG_IMAGE_GENERATION_ERROR', $errfile, $errline, $msg_text);
+					$phpbb_log->add('critical', $user->data['user_id'], $user->ip, 'LOG_IMAGE_GENERATION_ERROR', false, array($errfile, $errline, $msg_text));
 				}
 				// echo '<br /><br />BACKTRACE<br />' . get_backtrace() . '<br />' . "\n";
 			}
@@ -3899,7 +3757,7 @@ function msg_handler($errno, $msg_text, $errfile, $errline)
 			{
 				// let's avoid loops
 				$db->sql_return_on_error(true);
-				add_log('critical', 'LOG_GENERAL_ERROR', $msg_title, $log_text);
+				$phpbb_log->add('critical', $user->data['user_id'], $user->ip, 'LOG_GENERAL_ERROR', false, array($msg_title, $log_text));
 				$db->sql_return_on_error(false);
 			}
 
@@ -4848,8 +4706,8 @@ function page_header($page_title = '', $display_online_list = false, $item_id = 
 
 		if ($total_online_users > $config['record_online_users'])
 		{
-			set_config('record_online_users', $total_online_users, true);
-			set_config('record_online_date', time(), true);
+			$config->set('record_online_users', $total_online_users, false);
+			$config->set('record_online_date', time(), false);
 		}
 
 		$l_online_record = $user->lang('RECORD_ONLINE_USERS', (int) $config['record_online_users'], $user->format_date($config['record_online_date'], false, true));
@@ -4884,8 +4742,8 @@ function page_header($page_title = '', $display_online_list = false, $item_id = 
 		}
 	}
 
-	$forum_id = request_var('f', 0);
-	$topic_id = request_var('t', 0);
+	$forum_id = $request->variable('f', 0);
+	$topic_id = $request->variable('t', 0);
 
 	$s_feed_news = false;
 

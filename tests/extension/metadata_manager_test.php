@@ -41,7 +41,8 @@ class phpbb_extension_metadata_manager_test extends phpbb_database_test_case
 			'version'		=> '3.1.0',
 		));
 		$this->db = $this->new_dbal();
-		$this->db_tools = new \phpbb\db\tools\tools($this->db);
+		$factory = new \phpbb\db\tools\factory();
+		$this->db_tools = $factory->get($this->db);
 		$this->phpbb_root_path = dirname(__FILE__) . '/';
 		$this->phpEx = 'php';
 		$this->user = new \phpbb\user('\phpbb\datetime');
@@ -77,7 +78,10 @@ class phpbb_extension_metadata_manager_test extends phpbb_database_test_case
 		$this->template = new phpbb\template\twig\twig($phpbb_path_helper, $this->config, $this->user, $context, $twig, $cache_path, array(new \phpbb\template\twig\extension($context, $this->user)));
 		$container->set('template.twig.lexer', new \phpbb\template\twig\lexer($twig));
 
+		$container = new phpbb_mock_container_builder();
+
 		$this->migrator = new \phpbb\db\migrator(
+			$container,
 			$this->config,
 			$this->db,
 			$this->db_tools,

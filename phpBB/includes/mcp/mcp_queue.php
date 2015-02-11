@@ -41,8 +41,8 @@ class mcp_queue
 
 		include_once($phpbb_root_path . 'includes/functions_posting.' . $phpEx);
 
-		$forum_id = request_var('f', 0);
-		$start = request_var('start', 0);
+		$forum_id = $request->variable('f', 0);
+		$start = $request->variable('start', 0);
 
 		$this->page_title = 'MCP_QUEUE';
 
@@ -153,8 +153,8 @@ class mcp_queue
 
 				$user->add_lang(array('posting', 'viewtopic'));
 
-				$post_id = request_var('p', 0);
-				$topic_id = request_var('t', 0);
+				$post_id = $request->variable('p', 0);
+				$topic_id = $request->variable('t', 0);
 
 				/* @var $phpbb_notifications \phpbb\notification\manager */
 				$phpbb_notifications = $phpbb_container->get('notification_manager');
@@ -319,7 +319,7 @@ class mcp_queue
 					'POST_SUBJECT'			=> $post_info['post_subject'],
 					'POST_DATE'				=> $user->format_date($post_info['post_time']),
 					'POST_IP'				=> $post_info['poster_ip'],
-					'POST_IPADDR'			=> ($auth->acl_get('m_info', $post_info['forum_id']) && request_var('lookup', '')) ? @gethostbyaddr($post_info['poster_ip']) : '',
+					'POST_IPADDR'			=> ($auth->acl_get('m_info', $post_info['forum_id']) && $request->variable('lookup', '')) ? @gethostbyaddr($post_info['poster_ip']) : '',
 					'POST_ID'				=> $post_info['post_id'],
 					'S_FIRST_POST'			=> ($post_info['topic_first_post_id'] == $post_id),
 
@@ -619,8 +619,8 @@ class mcp_queue
 	*/
 	static public function approve_posts($action, $post_id_list, $id, $mode)
 	{
-		global $db, $template, $user, $config, $request, $phpbb_container;
-		global $phpEx, $phpbb_root_path;
+		global $db, $template, $user, $config, $request, $phpbb_container, $phpbb_dispatcher;
+		global $phpEx, $phpbb_root_path, $phpbb_log;
 
 		if (!phpbb_check_ids($post_id_list, POSTS_TABLE, 'post_id', array('m_approve')))
 		{
@@ -691,7 +691,11 @@ class mcp_queue
 
 			foreach ($approve_log as $log_data)
 			{
-				add_log('mod', $log_data['forum_id'], $log_data['topic_id'], 'LOG_POST_' . strtoupper($action) . 'D', $log_data['post_subject']);
+				$phpbb_log->add('mod', $user->data['user_id'], $user->ip, 'LOG_POST_' . strtoupper($action) . 'D', false, array(
+					'forum_id' => $log_data['forum_id'],
+					'topic_id' => $log_data['topic_id'],
+					$log_data['post_subject']
+				));
 			}
 
 			// Only send out the mails, when the posts are being approved
@@ -769,6 +773,30 @@ class mcp_queue
 				$success_msg = (sizeof($post_info) == 1) ? 'POST_' . strtoupper($action) . 'D_SUCCESS' : 'POSTS_' . strtoupper($action) . 'D_SUCCESS';
 			}
 
+			/**
+			 * Perform additional actions during post(s) approval
+			 *
+			 * @event core.approve_posts_after
+			 * @var	string	action				Variable containing the action we perform on the posts ('approve' or 'restore')
+			 * @var	array	post_info			Array containing info for all posts being approved
+			 * @var	array	topic_info			Array containing info for all parent topics of the posts
+			 * @var	int		num_topics			Variable containing number of topics
+			 * @var bool	notify_poster		Variable telling if the post should be notified or not
+			 * @var	string	success_msg			Variable containing the language key for the success message
+			 * @var string	redirect			Variable containing the redirect url
+			 * @since 3.1.4-RC1
+			 */
+			$vars = array(
+				'action',
+				'post_info',
+				'topic_info',
+				'num_topics',
+				'notify_poster',
+				'success_msg',
+				'redirect',
+			);
+			extract($phpbb_dispatcher->trigger_event('core.approve_posts_after', compact($vars)));
+
 			meta_refresh(3, $redirect);
 			$message = $user->lang[$success_msg];
 
@@ -844,8 +872,8 @@ class mcp_queue
 	*/
 	static public function approve_topics($action, $topic_id_list, $id, $mode)
 	{
-		global $db, $template, $user, $config;
-		global $phpEx, $phpbb_root_path, $request, $phpbb_container;
+		global $db, $template, $user, $config, $phpbb_log;
+		global $phpEx, $phpbb_root_path, $request, $phpbb_container, $phpbb_dispatcher;
 
 		if (!phpbb_check_ids($topic_id_list, TOPICS_TABLE, 'topic_id', array('m_approve')))
 		{
@@ -896,7 +924,11 @@ class mcp_queue
 
 			foreach ($approve_log as $log_data)
 			{
-				add_log('mod', $log_data['forum_id'], $log_data['topic_id'], 'LOG_TOPIC_' . strtoupper($action) . 'D', $log_data['topic_title']);
+				$phpbb_log->add('mod', $user->data['user_id'], $user->ip, 'LOG_TOPIC_' . strtoupper($action) . 'D', false, array(
+					'forum_id' => $log_data['forum_id'],
+					'topic_id' => $log_data['topic_id'],
+					$log_data['topic_title']
+				));
 			}
 
 			// Only send out the mails, when the posts are being approved
@@ -951,6 +983,28 @@ class mcp_queue
 					}
 				}
 			}
+
+			/**
+			 * Perform additional actions during topics(s) approval
+			 *
+			 * @event core.approve_topics_after
+			 * @var	string	action				Variable containing the action we perform on the posts ('approve' or 'restore')
+			 * @var	mixed	topic_info			Array containing info for all topics being approved
+			 * @var	array	first_post_ids		Array containing ids of all first posts
+			 * @var bool	notify_poster		Variable telling if the poster should be notified or not
+			 * @var	string	success_msg			Variable containing the language key for the success message
+			 * @var string	redirect			Variable containing the redirect url
+			 * @since 3.1.4-RC1
+			 */
+			$vars = array(
+				'action',
+				'topic_info',
+				'first_post_ids',
+				'notify_poster',
+				'success_msg',
+				'redirect',
+			);
+			extract($phpbb_dispatcher->trigger_event('core.approve_topics_after', compact($vars)));
 
 			meta_refresh(3, $redirect);
 			$message = $user->lang[$success_msg];
@@ -1015,8 +1069,8 @@ class mcp_queue
 	*/
 	static public function disapprove_posts($post_id_list, $id, $mode)
 	{
-		global $db, $template, $user, $config, $phpbb_container;
-		global $phpEx, $phpbb_root_path, $request;
+		global $db, $template, $user, $config, $phpbb_container, $phpbb_dispatcher;
+		global $phpEx, $phpbb_root_path, $request, $phpbb_log;
 
 		if (!phpbb_check_ids($post_id_list, POSTS_TABLE, 'post_id', array('m_approve')))
 		{
@@ -1165,12 +1219,23 @@ class mcp_queue
 					if ($is_disapproving)
 					{
 						$l_log_message = ($log_data['type'] == 'topic') ? 'LOG_TOPIC_DISAPPROVED' : 'LOG_POST_DISAPPROVED';
-						add_log('mod', $log_data['forum_id'], $log_data['topic_id'], $l_log_message, $log_data['post_subject'], $disapprove_reason, $log_data['post_username']);
+						$phpbb_log->add('mod', $user->data['user_id'], $user->ip, $l_log_message, false, array(
+							'forum_id' => $log_data['forum_id'],
+							'topic_id' => $log_data['topic_id'],
+							$log_data['post_subject'],
+							$disapprove_reason,
+							$log_data['post_username']
+						));
 					}
 					else
 					{
 						$l_log_message = ($log_data['type'] == 'topic') ? 'LOG_DELETE_TOPIC' : 'LOG_DELETE_POST';
-						add_log('mod', $log_data['forum_id'], $log_data['topic_id'], $l_log_message, $log_data['post_subject'], $log_data['post_username']);
+						$phpbb_log->add('mod', $user->data['user_id'], $user->ip, $l_log_message, false, array(
+							'forum_id' => $log_data['forum_id'],
+							'topic_id' => $log_data['topic_id'],
+							$log_data['post_subject'],
+							$log_data['post_username']
+						));
 					}
 				}
 			}
@@ -1247,8 +1312,6 @@ class mcp_queue
 				}
 			}
 
-			unset($lang_reasons, $post_info, $disapprove_reason, $disapprove_reason_lang);
-
 			if ($num_disapproved_topics)
 			{
 				$success_msg = ($num_disapproved_topics == 1) ? 'TOPIC' : 'TOPICS';
@@ -1282,6 +1345,44 @@ class mcp_queue
 					$redirect = append_sid($phpbb_root_path . 'viewforum.' . $phpEx, 'f=' . $request->variable('f', 0));
 				}
 			}
+
+			/**
+			 * Perform additional actions during post(s) disapproval
+			 *
+			 * @event core.disapprove_posts_after
+			 * @var	array	post_info					Array containing info for all posts being disapproved
+			 * @var	array	topic_information			Array containing information for the topics
+			 * @var	array	topic_posts_unapproved		Array containing list of topic ids and the count of disapproved posts in them
+			 * @var	array	post_disapprove_list		Array containing list of posts and their topic id
+			 * @var	int		num_disapproved_topics		Variable containing the number of disapproved topics
+			 * @var	int		num_disapproved_posts		Variable containing the number of disapproved posts
+			 * @var array	lang_reasons				Array containing the language keys for reasons
+			 * @var	string	disapprove_reason			Variable containing the language key for the success message
+			 * @var	string	disapprove_reason_lang		Variable containing the language key for the success message
+			 * @var bool	is_disapproving				Variable telling if anything is going to be disapproved
+			 * @var bool	notify_poster				Variable telling if the post should be notified or not
+			 * @var	string	success_msg					Variable containing the language key for the success message
+			 * @var string	redirect					Variable containing the redirect url
+			 * @since 3.1.4-RC1
+			 */
+			$vars = array(
+				'post_info',
+				'topic_information',
+				'topic_posts_unapproved',
+				'post_disapprove_list',
+				'num_disapproved_topics',
+				'num_disapproved_posts',
+				'lang_reasons',
+				'disapprove_reason',
+				'disapprove_reason_lang',
+				'is_disapproving',
+				'notify_poster',
+				'success_msg',
+				'redirect',
+			);
+			extract($phpbb_dispatcher->trigger_event('core.disapprove_posts_after', compact($vars)));
+
+			unset($lang_reasons, $post_info, $disapprove_reason, $disapprove_reason_lang);
 
 			meta_refresh(3, $redirect);
 			$message = $user->lang[$success_msg];
