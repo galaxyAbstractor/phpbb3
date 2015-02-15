@@ -491,7 +491,9 @@ class install_convert extends module
 				{
 					$prefixes = array();
 
-					$tables_existing = get_tables($src_db);
+					$db_tools_factory = new \phpbb\db\tools\factory();
+					$db_tools = $db_tools_factory->get($src_db);
+					$tables_existing = $db_tools->sql_list_tables();
 					$tables_existing = array_map('strtolower', $tables_existing);
 					foreach ($tables_existing as $table_name)
 					{
@@ -599,7 +601,7 @@ class install_convert extends module
 				'S_EXPLAIN'		=> $vars['explain'],
 				'S_LEGEND'		=> false,
 				'TITLE_EXPLAIN'	=> ($vars['explain']) ? $lang[$vars['lang'] . '_EXPLAIN'] : '',
-				'CONTENT'		=> $this->p_master->input_field($config_key, $vars['type'], $$config_key, $options),
+				'CONTENT'		=> $this->p_master->input_field($config_key, $vars['type'], ${$config_key}, $options),
 				)
 			);
 		}
