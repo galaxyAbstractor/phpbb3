@@ -11,7 +11,7 @@
 
 class client
 {
-	protected $api_url = 'http://localhost/phpbb/phpBB/app.php';
+	protected $api_url = 'http://worldxbox.fr/forum_dev_api/app.php';
 	protected $key_store = 'keys.txt';
 
 	public function get_auth_link()

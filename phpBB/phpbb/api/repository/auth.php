@@ -262,7 +262,6 @@ class auth
      */
     private function is_db_authorized ($request, $auth_key, $serial, $hash)
     {
-
         if ($auth_key != 'guest')
         {
             $sql = 'SELECT sign_key, user_id, serial
@@ -319,7 +318,10 @@ class auth
      * @return mixed
      * @throws \phpbb\api\exception\no_permission_exception
      */
-    private function is_user_authorized ($user_id, $serial) {
+    private function is_user_authorized ($user_id, $serial)
+    {
+        $userdata = $this->auth->obtain_user_data($user_id);
+        $this->auth->acl($userdata);
         if ($this->auth->acl_get('u_api')) {
             if ($user_id != ANONYMOUS)
             {
