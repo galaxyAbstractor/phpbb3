@@ -148,6 +148,10 @@ class auth
 		}
 		catch (api_exception $e)
 		{
+            $exceptionMessage = $e->getMessage();
+            if (isset($exceptionMessage) && !empty($exceptionMessage)) {
+                return $this->helper->error($exceptionMessage);
+            }
 			return $this->helper->error($this->user->lang['API_NOT_ENABLED']);
 		}
 	}
@@ -199,7 +203,6 @@ class auth
 			{
 				return $this->helper->error($this->user->lang['AUTH_KEY_ERROR']);
 			}
-
 			$this->auth_repository->authorize($exchange_key, $this->user->data['user_id'], $app_name);
 
 			$this->template->assign_vars(array(
@@ -212,7 +215,12 @@ class auth
 		}
 		catch (api_exception $e)
 		{
-			return $this->helper->error($this->user->lang['API_NOT_ENABLED']);
+            $exceptionMessage = $e->getMessage();
+            if (isset($exceptionMessage) && !empty($exceptionMessage)) {
+                return $this->helper->error($exceptionMessage);
+            }
+
+            return $this->helper->error($this->user->lang['API_NOT_ENABLED']);
 		}
 	}
 
@@ -230,7 +238,6 @@ class auth
 		try
 		{
 			$keys = $this->auth_repository->exchange_key($exchange_key);
-
 			$response = array(
 				'status' => 200,
 				'data' => $keys,
