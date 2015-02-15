@@ -22,3 +22,8 @@ api_auth_verify_controller:
     path: /verify
     defaults: { _controller: api.controller.auth:verify }
     methods: [GET]
+
+api_token_refresh_controller:
+    path: /refresh_token/{auth_key}
+    defaults: { _controller: api.controller.auth:refresh_token }
+    methods: [GET]

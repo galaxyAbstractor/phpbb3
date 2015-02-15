@@ -28,6 +28,7 @@ class api extends \phpbb\db\migration\migration
 					'COLUMNS'		=> array(
 						'key_id'			=> array('UINT', null, 'auto_increment'),
 						'user_id'			=> array('UINT', 0),
+                        'timestamp'			=> array('TIMESTAMP', 0),
 						'name'				=> array('VCHAR', ''),
 						'auth_key'			=> array('VCHAR:16', ''),
 						'sign_key'			=> array('VCHAR:16', ''),
@@ -43,6 +44,7 @@ class api extends \phpbb\db\migration\migration
 						'sign_key'			=> array('VCHAR:16', ''),
 						'user_id'			=> array('UINT', 0),
 						'name'				=> array('VCHAR', ''),
+                        'life_time'			=> array('TIMESTAMP', 0),
 					),
 					'PRIMARY_KEY'			=> 'exchange_key',
 				),
@@ -63,7 +65,8 @@ class api extends \phpbb\db\migration\migration
 	public function update_data()
 	{
 		return array(
-			array('config.add', array('allow_api', 1)),
+            array('config.add', array('allow_api', 1)),
+            array('config.add', array('timelife_token_api', 1)),
 			array('permission.add', array('u_api')),
 			array('permission.add', array('m_api')),
 		);

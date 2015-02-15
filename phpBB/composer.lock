@@ -2527,7 +2527,9 @@
             "time": "2015-01-25 04:39:35"
         }
     ],
-    "aliases": [],
+    "aliases": [
+
+    ],
     "minimum-stability": "stable",
     "stability-flags": {
         "symfony/config": 20,
@@ -2553,5 +2555,7 @@
     "platform": {
         "php": ">=5.3.9"
     },
-    "platform-dev": []
+    "platform-dev": [
+
+    ]
 }
