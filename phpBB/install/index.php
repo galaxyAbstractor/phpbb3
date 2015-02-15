@@ -22,9 +22,9 @@ define('PHPBB_ENVIRONMENT', 'production');
 $phpbb_root_path = (defined('PHPBB_ROOT_PATH')) ? PHPBB_ROOT_PATH : './../';
 $phpEx = substr(strrchr(__FILE__, '.'), 1);
 
-if (version_compare(PHP_VERSION, '5.3.3') < 0)
+if (version_compare(PHP_VERSION, '5.3.9') < 0)
 {
-	die('You are running an unsupported PHP version. Please upgrade to PHP 5.3.3 or higher before trying to install phpBB 3.1');
+	die('You are running an unsupported PHP version. Please upgrade to PHP 5.3.9 or higher before trying to install phpBB 3.1');
 }
 
 function phpbb_require_updated($path, $optional = false)
@@ -148,9 +148,6 @@ $phpbb_dispatcher = $phpbb_container->get('dispatcher');
 
 /* @var $request \phpbb\request\request_interface */
 $request	= $phpbb_container->get('request');
-
-// make sure request_var uses this request instance
-request_var('', 0, false, false, $request); // "dependency injection" for a function
 
 // Try and load an appropriate language if required
 $language = basename($request->variable('language', ''));

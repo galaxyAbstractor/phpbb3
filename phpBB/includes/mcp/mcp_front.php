@@ -26,7 +26,7 @@ function mcp_front_view($id, $mode, $action)
 {
 	global $phpEx, $phpbb_root_path, $config;
 	global $template, $db, $user, $auth, $module;
-	global $phpbb_dispatcher;
+	global $phpbb_dispatcher, $request;
 
 	// Latest 5 unapproved
 	if ($module->loaded('queue'))
@@ -35,7 +35,7 @@ function mcp_front_view($id, $mode, $action)
 		$post_list = array();
 		$forum_names = array();
 
-		$forum_id = request_var('f', 0);
+		$forum_id = $request->variable('f', 0);
 
 		$template->assign_var('S_SHOW_UNAPPROVED', (!empty($forum_list)) ? true : false);
 
@@ -234,6 +234,7 @@ function mcp_front_view($id, $mode, $action)
 						'ATTACH_ICON_IMG'	=> ($auth->acl_get('u_download') && $auth->acl_get('f_download', $row['forum_id']) && $row['post_attachment']) ? $user->img('icon_topic_attach', $user->lang['TOTAL_ATTACHMENTS']) : '',
 					));
 				}
+				$db->sql_freeresult($result);
 			}
 
 			$template->assign_vars(array(
@@ -290,6 +291,7 @@ function mcp_front_view($id, $mode, $action)
 				$pm_by_id[(int) $row['msg_id']] = $row;
 				$pm_list[] = (int) $row['msg_id'];
 			}
+			$db->sql_freeresult($result);
 
 			$address_list = get_recipient_strings($pm_by_id);
 

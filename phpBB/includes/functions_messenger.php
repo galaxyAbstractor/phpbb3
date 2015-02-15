@@ -349,7 +349,7 @@ class messenger
 	*/
 	function error($type, $msg)
 	{
-		global $user, $phpEx, $phpbb_root_path, $config, $request;
+		global $user, $phpEx, $phpbb_root_path, $config, $request, $phpbb_log;
 
 		// Session doesn't exist, create it
 		if (!isset($user->session_id) || $user->session_id === '')
@@ -372,7 +372,7 @@ class messenger
 		}
 
 		$message .= '<br /><em>' . htmlspecialchars($calling_page) . '</em><br /><br />' . $msg . '<br />';
-		add_log('critical', 'LOG_ERROR_' . $type, $message);
+		$phpbb_log->add('critical', $user->data['user_id'], $user->ip, 'LOG_ERROR_' . $type, false, array($message));
 	}
 
 	/**
@@ -717,14 +717,14 @@ class queue
 		{
 			if (!$have_cache_file)
 			{
-				set_config('last_queue_run', time(), true);
+				$config->set('last_queue_run', time(), false);
 			}
 
 			$lock->release();
 			return;
 		}
 
-		set_config('last_queue_run', time(), true);
+		$config->set('last_queue_run', time(), false);
 
 		include($this->cache_file);
 

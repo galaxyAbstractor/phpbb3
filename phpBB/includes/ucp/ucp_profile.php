@@ -32,7 +32,7 @@ class ucp_profile
 	function main($id, $mode)
 	{
 		global $cache, $config, $db, $user, $auth, $template, $phpbb_root_path, $phpEx;
-		global $request, $phpbb_container;
+		global $request, $phpbb_container, $phpbb_log, $phpbb_dispatcher;
 
 		$user->add_lang('posting');
 
@@ -46,12 +46,23 @@ class ucp_profile
 			case 'reg_details':
 
 				$data = array(
-					'username'			=> utf8_normalize_nfc(request_var('username', $user->data['username'], true)),
-					'email'				=> strtolower(request_var('email', $user->data['user_email'])),
+					'username'			=> $request->variable('username', $user->data['username'], true),
+					'email'				=> strtolower($request->variable('email', $user->data['user_email'])),
 					'new_password'		=> $request->variable('new_password', '', true),
 					'cur_password'		=> $request->variable('cur_password', '', true),
 					'password_confirm'	=> $request->variable('password_confirm', '', true),
 				);
+
+				/**
+				* Modify user registration data on editing account settings in UCP
+				*
+				* @event core.ucp_profile_reg_details_data
+				* @var	array	data		Array with current or updated user registration data
+				* @var	bool	submit		Flag indicating if submit button has been pressed
+				* @since 3.1.4-RC1
+				*/
+				$vars = array('data', 'submit');
+				extract($phpbb_dispatcher->trigger_event('core.ucp_profile_reg_details_data', compact($vars)));
 
 				add_form_key('ucp_reg_details');
 
@@ -116,18 +127,30 @@ class ucp_profile
 
 						if ($auth->acl_get('u_chgname') && $config['allow_namechange'] && $data['username'] != $user->data['username'])
 						{
-							add_log('user', $user->data['user_id'], 'LOG_USER_UPDATE_NAME', $user->data['username'], $data['username']);
+							$phpbb_log->add('user', $user->data['user_id'], $user->ip, 'LOG_USER_UPDATE_NAME', false, array(
+								'reportee_id' => $user->data['user_id'],
+								$user->data['username'],
+								$data['username']
+							));
 						}
 
 						if ($auth->acl_get('u_chgpasswd') && $data['new_password'] && !$passwords_manager->check($data['new_password'], $user->data['user_password']))
 						{
 							$user->reset_login_keys();
-							add_log('user', $user->data['user_id'], 'LOG_USER_NEW_PASSWORD', $data['username']);
+							$phpbb_log->add('user', $user->data['user_id'], $user->ip, 'LOG_USER_NEW_PASSWORD', false, array(
+								'reportee_id' => $user->data['user_id'],
+								$user->data['username']
+							));
 						}
 
 						if ($auth->acl_get('u_chgemail') && $data['email'] != $user->data['user_email'])
 						{
-							add_log('user', $user->data['user_id'], 'LOG_USER_UPDATE_EMAIL', $data['username'], $user->data['user_email'], $data['email']);
+							$phpbb_log->add('user', $user->data['user_id'], $user->ip, 'LOG_USER_UPDATE_EMAIL', false, array(
+								'reportee_id' => $user->data['user_id'],
+								$user->data['username'],
+								$data['user_email'],
+								$data['email']
+							));
 						}
 
 						$message = 'PROFILE_UPDATED';
@@ -200,6 +223,17 @@ class ucp_profile
 							$sql_ary['user_newpasswd'] = '';
 						}
 
+						/**
+						* Modify user registration data before submitting it to the database
+						*
+						* @event core.ucp_profile_reg_details_sql_ary
+						* @var	array	data		Array with current or updated user registration data
+						* @var	array	sql_ary		Array with user registration data to submit to the database
+						* @since 3.1.4-RC1
+						*/
+						$vars = array('data', 'sql_ary');
+						extract($phpbb_dispatcher->trigger_event('core.ucp_profile_reg_details_sql_ary', compact($vars)));
+
 						if (sizeof($sql_ary))
 						{
 							$sql = 'UPDATE ' . USERS_TABLE . '
@@ -268,7 +302,7 @@ class ucp_profile
 				$cp_data = $cp_error = array();
 
 				$data = array(
-					'jabber'		=> utf8_normalize_nfc(request_var('jabber', $user->data['user_jabber'], true)),
+					'jabber'		=> $request->variable('jabber', $user->data['user_jabber'], true),
 				);
 
 				if ($config['allow_birthdays'])
@@ -280,11 +314,22 @@ class ucp_profile
 						list($data['bday_day'], $data['bday_month'], $data['bday_year']) = explode('-', $user->data['user_birthday']);
 					}
 
-					$data['bday_day'] = request_var('bday_day', $data['bday_day']);
-					$data['bday_month'] = request_var('bday_month', $data['bday_month']);
-					$data['bday_year'] = request_var('bday_year', $data['bday_year']);
+					$data['bday_day'] = $request->variable('bday_day', $data['bday_day']);
+					$data['bday_month'] = $request->variable('bday_month', $data['bday_month']);
+					$data['bday_year'] = $request->variable('bday_year', $data['bday_year']);
 					$data['user_birthday'] = sprintf('%2d-%2d-%4d', $data['bday_day'], $data['bday_month'], $data['bday_year']);
 				}
+
+				/**
+				* Modify user data on editing profile in UCP
+				*
+				* @event core.ucp_profile_modify_profile_info
+				* @var	array	data		Array with user profile data
+				* @var	bool	submit		Flag indicating if submit button has been pressed
+				* @since 3.1.4-RC1
+				*/
+				$vars = array('data', 'submit');
+				extract($phpbb_dispatcher->trigger_event('core.ucp_profile_modify_profile_info', compact($vars)));
 
 				add_form_key('ucp_profile_info');
 
@@ -341,6 +386,17 @@ class ucp_profile
 						{
 							$sql_ary['user_birthday'] = $data['user_birthday'];
 						}
+
+						/**
+						* Modify profile data in UCP before submitting to the database
+						*
+						* @event core.ucp_profile_info_modify_sql_ary
+						* @var	array	cp_data		Array with the user custom profile fields data
+						* @var	array	data		Array with user profile data
+						* @since 3.1.4-RC1
+						*/
+						$vars = array('cp_data', 'data');
+						extract($phpbb_dispatcher->trigger_event('core.ucp_profile_info_modify_sql_ary', compact($vars)));
 
 						$sql = 'UPDATE ' . USERS_TABLE . '
 							SET ' . $db->sql_build_array('UPDATE', $sql_ary) . '
@@ -641,7 +697,7 @@ class ucp_profile
 
 				if ($submit)
 				{
-					$keys = request_var('keys', array(''));
+					$keys = $request->variable('keys', array(''));
 
 					if (!check_form_key('ucp_autologin_keys'))
 					{

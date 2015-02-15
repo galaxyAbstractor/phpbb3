@@ -38,14 +38,9 @@ $auth		= $phpbb_container->get('auth');
 /* @var $db \phpbb\db\driver\driver_interface */
 $db			= $phpbb_container->get('dbal.conn');
 
-// make sure request_var uses this request instance
-request_var('', 0, false, false, $request); // "dependency injection" for a function
-
 // Grab global variables, re-cache if necessary
 /* @var $config phpbb\config\db */
 $config = $phpbb_container->get('config');
-set_config(null, null, null, $config);
-set_config_count(null, null, null, $config);
 
 /* @var $phpbb_log \phpbb\log\log_interface */
 $phpbb_log = $phpbb_container->get('log');

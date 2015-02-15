@@ -230,9 +230,12 @@ class phpbb_functional_test_case extends phpbb_test_case
 
 		$config = new \phpbb\config\config(array());
 		$db = $this->get_db();
-		$db_tools = new \phpbb\db\tools\tools($db);
+		$factory = new \phpbb\db\tools\factory();
+		$db_tools = $factory->get($db);
 
+		$container = new phpbb_mock_container_builder();
 		$migrator = new \phpbb\db\migrator(
+			$container,
 			$config,
 			$db,
 			$db_tools,
@@ -243,8 +246,8 @@ class phpbb_functional_test_case extends phpbb_test_case
 			array(),
 			new \phpbb\db\migration\helper()
 		);
-		$container = new phpbb_mock_container_builder();
 		$container->set('migrator', $migrator);
+		$container->set('dispatcher', new phpbb_mock_event_dispatcher());
 		$user = new \phpbb\user('\phpbb\datetime');
 
 		$extension_manager = new \phpbb\extension\manager(
@@ -575,8 +578,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 		{
 			require_once(__DIR__ . '/../../phpBB/includes/functions_user.php');
 		}
-		set_config(null, null, null, $config);
-		set_config_count(null, null, null, $config);
+
 		$phpbb_dispatcher = new phpbb_mock_event_dispatcher();
 		$passwords_manager = $this->get_passwords_manager();
 
@@ -888,7 +890,7 @@ class phpbb_functional_test_case extends phpbb_test_case
 	*/
 	static public function assert_response_status_code($status_code = 200)
 	{
-		self::assertEquals($status_code, self::$client->getResponse()->getStatus());
+		self::assertEquals($status_code, self::$client->getResponse()->getStatus(), 'HTTP status code does not match');
 	}
 
 	public function assert_filter($crawler, $expr, $msg = null)

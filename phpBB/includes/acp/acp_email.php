@@ -25,7 +25,7 @@ class acp_email
 
 	function main($id, $mode)
 	{
-		global $config, $db, $user, $auth, $template, $cache;
+		global $config, $db, $user, $auth, $template, $cache, $phpbb_log, $request;
 		global $phpbb_root_path, $phpbb_admin_path, $phpEx, $table_prefix, $phpbb_dispatcher;
 
 		$user->add_lang('acp/email');
@@ -39,11 +39,11 @@ class acp_email
 		$submit = (isset($_POST['submit'])) ? true : false;
 		$error = array();
 
-		$usernames	= request_var('usernames', '', true);
+		$usernames	= $request->variable('usernames', '', true);
 		$usernames	= (!empty($usernames)) ? explode("\n", $usernames) : array();
-		$group_id	= request_var('g', 0);
-		$subject	= utf8_normalize_nfc(request_var('subject', '', true));
-		$message	= utf8_normalize_nfc(request_var('message', '', true));
+		$group_id	= $request->variable('g', 0);
+		$subject	= $request->variable('subject', '', true);
+		$message	= $request->variable('message', '', true);
 
 		// Do the job ...
 		if ($submit)
@@ -51,7 +51,7 @@ class acp_email
 			// Error checking needs to go here ... if no subject and/or no message then skip
 			// over the send and return to the form
 			$use_queue		= (isset($_POST['send_immediately'])) ? false : true;
-			$priority		= request_var('mail_priority_flag', MAIL_NORMAL_PRIORITY);
+			$priority		= $request->variable('mail_priority_flag', MAIL_NORMAL_PRIORITY);
 
 			if (!check_form_key($form_key))
 			{
@@ -263,7 +263,7 @@ class acp_email
 				{
 					if (!empty($usernames))
 					{
-						add_log('admin', 'LOG_MASS_EMAIL', implode(', ', utf8_normalize_nfc($usernames)));
+						$phpbb_log->add('admin', $user->data['user_id'], $user->ip, 'LOG_MASS_EMAIL', false, array(implode(', ', utf8_normalize_nfc($usernames))));
 					}
 					else
 					{
@@ -277,7 +277,7 @@ class acp_email
 							$group_name = $user->lang['ALL_USERS'];
 						}
 
-						add_log('admin', 'LOG_MASS_EMAIL', $group_name);
+						$phpbb_log->add('admin', $user->data['user_id'], $user->ip, 'LOG_MASS_EMAIL', false, array($group_name));
 					}
 				}
 
@@ -314,7 +314,7 @@ class acp_email
 		$s_priority_options .= '<option value="' . MAIL_NORMAL_PRIORITY . '" selected="selected">' . $user->lang['MAIL_NORMAL_PRIORITY'] . '</option>';
 		$s_priority_options .= '<option value="' . MAIL_HIGH_PRIORITY . '">' . $user->lang['MAIL_HIGH_PRIORITY'] . '</option>';
 
-		$template->assign_vars(array(
+		$template_data = array(
 			'S_WARNING'				=> (sizeof($error)) ? true : false,
 			'WARNING_MSG'			=> (sizeof($error)) ? implode('<br />', $error) : '',
 			'U_ACTION'				=> $this->u_action,
@@ -323,8 +323,22 @@ class acp_email
 			'U_FIND_USERNAME'		=> append_sid("{$phpbb_root_path}memberlist.$phpEx", 'mode=searchuser&amp;form=acp_email&amp;field=usernames'),
 			'SUBJECT'				=> $subject,
 			'MESSAGE'				=> $message,
-			'S_PRIORITY_OPTIONS'	=> $s_priority_options)
+			'S_PRIORITY_OPTIONS'	=> $s_priority_options,
 		);
 
+		/**
+		* Modify custom email template data before we display the form
+		*
+		* @event core.acp_email_display
+		* @var	array	template_data		Array with template data assigned to email template
+		* @var	array	exclude				Array with groups which are excluded from group selection
+		* @var	array	usernames			Usernames which will be displayed in form
+		*
+		* @since 3.1.4-RC1
+		*/
+		$vars = array('template_data', 'exclude', 'usernames');
+		extract($phpbb_dispatcher->trigger_event('core.acp_email_display', compact($vars)));
+
+		$template->assign_vars($template_data);
 	}
 }

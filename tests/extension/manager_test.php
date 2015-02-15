@@ -150,13 +150,17 @@ class phpbb_extension_manager_test extends phpbb_database_test_case
 
 		$config = new \phpbb\config\config(array('version' => PHPBB_VERSION));
 		$db = $this->new_dbal();
-		$db_tools = new \phpbb\db\tools\tools($db);
+		$factory = new \phpbb\db\tools\factory();
+		$db_tools = $factory->get($db);
 		$phpbb_root_path = __DIR__ . './../../phpBB/';
 		$php_ext = 'php';
 		$table_prefix = 'phpbb_';
 		$user = new \phpbb\user('\phpbb\user');
 
+		$container = new phpbb_mock_container_builder();
+
 		$migrator = new \phpbb\db\migrator(
+			$container,
 			$config,
 			$db,
 			$db_tools,
@@ -167,7 +171,6 @@ class phpbb_extension_manager_test extends phpbb_database_test_case
 			array(),
 			new \phpbb\db\migration\helper()
 		);
-		$container = new phpbb_mock_container_builder();
 		$container->set('migrator', $migrator);
 
 		return new \phpbb\extension\manager(
