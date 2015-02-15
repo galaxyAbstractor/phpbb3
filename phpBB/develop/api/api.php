@@ -45,7 +45,8 @@ else if ($_GET['mode'] == 'verify')
 {
 	if ($client->verify())
 	{
-		echo '<a href="api.php">All Ok!</a>';
+        echo '<a href="api.php">All Ok!</a><br>';
+        echo '<a href="api.php?mode=refresh">Refresh your token!</a>';
 	}
 	else
 	{
@@ -53,8 +54,11 @@ else if ($_GET['mode'] == 'verify')
 	}
 }
 else if ($_GET['mode'] == 'exchange') {
-	$client->exchange();
-	echo '<a href="api.php?mode=verify">Please verify!</a>';
+    $client->exchange();
+    echo '<a href="api.php?mode=verify">Please verify!</a>';
+}
+else if ($_GET['mode'] == 'refresh') {
+    $client->refresh();
 }
 
 if (isset($_POST['method']))

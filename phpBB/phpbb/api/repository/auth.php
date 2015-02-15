@@ -176,15 +176,15 @@ class auth
         $sign_key = $row['sign_key'];
         $user_id = (int) $row['user_id'];
         $name = $row['name'];
-        // Define the time life by default in case a problem occured in ACP - init
-        $time_life  = 1;
-        // If the time life is at least 1hour => we add the value
-        if ($this->phpbb_config['timelife_token_api'] >= 1) {
-            $time_life  = $row['timestamp'] + intval((($this->phpbb_config['timelife_token_api'] * 60) * 60));
+
+        // Test if timelife is set
+        if (!isset($this->phpbb_config['timelife_token_api']) || $this->phpbb_config['timelife_token_api'] <= 0) {
+            throw new api_exception('The token timelife is not defined or well formated', 400);
         }
-        // If the time life is defined as inifite, insert date and token time life are equals
-        elseif ($this->phpbb_config['timelife_token_api'] == 0) {
-            $time_life  = $row['timestamp'];
+
+        // If the time life is at least 1 hour or less => we add the value
+        if ($this->phpbb_config['timelife_token_api'] > 0) {
+            $time_life  = $row['timestamp'] + intval((($this->phpbb_config['timelife_token_api'] * 60) * 60));
         }
 
         $this->db->sql_freeresult($result);
@@ -212,9 +212,15 @@ class auth
         $this->db->sql_query($sql);
         $this->db->sql_freeresult();
 
+        // Set expire date for the token from timestamp
+        $expire_date = new \DateTime();
+        $expire_date->setTimestamp($time_life);
+        $expire_date->setTimezone(new \DateTimeZone($this->phpbb_config['board_timezone']));
+
         return array(
             'auth_key' => $auth_key,
             'sign_key' => $sign_key,
+            'expire_date' => $expire_date->format('d/m/Y H:m:s'),
         );
     }
 
@@ -248,6 +254,54 @@ class auth
 
     }
 
+    public function new_sign_key($auth_key, $user_id)
+    {
+        $auth_key = $this->db->sql_escape($auth_key);
+        $user_id = $this->db->sql_escape($user_id);
+
+        $sql = 'SELECT *
+			FROM ' . API_KEYS_TABLE . "
+			WHERE auth_key =  '$auth_key'
+			AND user_id = $user_id";
+
+        $result = $this->db->sql_query($sql);
+        $row = $this->db->sql_fetchrow($result);
+        $this->db->sql_freeresult();
+
+        if (!$row) {
+            throw new invalid_key_exception('Auth key not found or not known for this user.', 400);
+        }
+
+        $new_sign_key = unique_id();
+
+        // Test if timelife is set
+        if (!isset($this->phpbb_config['timelife_token_api']) || $this->phpbb_config['timelife_token_api'] <= 0) {
+            throw new api_exception('The token timelife is not defined or well formated', 400);
+        }
+
+        // If the time life is at least 1hour => we add the value
+        if ($this->phpbb_config['timelife_token_api'] >= 0) {
+            $time_life  = time() + intval((($this->phpbb_config['timelife_token_api'] * 60) * 60));
+        }
+        $sql = 'UPDATE '. API_KEYS_TABLE .' SET sign_key = \''.$new_sign_key.'\', life_time = \''.$time_life.'\'
+                WHERE  auth_key =  \''.$auth_key.'\'
+			    AND user_id = '.$user_id;
+
+        $this->db->sql_query($sql);
+        $this->db->sql_freeresult();
+
+        // Set expire date for the token from timestamp
+        $expire_date = new \DateTime();
+        $expire_date->setTimestamp($time_life);
+        $expire_date->setTimezone(new \DateTimeZone($this->phpbb_config['board_timezone']));
+
+        return array(
+            'auth_key' => $auth_key,
+            'sign_key' => $new_sign_key,
+            'expire_date' => $expire_date->format('d/m/Y H:m:s'),
+        );
+    }
+
     /**
      * If the user is a member, checks if the auth_key exist in table, if the serial is the same and if the hash is
      * well formed. If everything is ok, it return the user_id.
@@ -264,7 +318,7 @@ class auth
     {
         if ($auth_key != 'guest')
         {
-            $sql = 'SELECT sign_key, user_id, serial
+            $sql = 'SELECT sign_key, user_id, serial, time_life
 					FROM ' . API_KEYS_TABLE
                 . " WHERE auth_key = '" . $this->db->sql_escape($auth_key) . "'";
 
@@ -273,13 +327,19 @@ class auth
             $row = $this->db->sql_fetchrow($result);
             $sign_key = $row['sign_key'];
             $user_id = (int) $row['user_id'];
-            $dbserial =  (int) $row['serial'];
+            $dbserial = (int) $row['serial'];
+            $time_life = $row['time_life'];
 
             $this->db->sql_freeresult($result);
 
             if (empty($sign_key))
             {
                 throw new not_authed_exception('The user has not authenticated this application', 401);
+            }
+
+            if (!$this->is_token_still_valid($time_life))
+            {
+                throw new not_authed_exception('The sign key is outdated', 401);
             }
 
             if (is_array($request))
@@ -340,6 +400,17 @@ class auth
         else
         {
             throw new no_permission_exception('User has no permission to use the API', 403);
+        }
+    }
+
+    private function is_token_still_valid($time_life)
+    {
+
+        if ($time_life > time()) {
+            return true;
+        }
+        else {
+            return false;
         }
     }
 }

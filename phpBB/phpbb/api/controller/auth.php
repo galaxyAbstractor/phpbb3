@@ -307,4 +307,32 @@ class auth
 
 		return new JsonResponse($response, $response['status']);
 	}
+
+    /**
+     * @param $auth_key
+     * @return JsonResponse
+     */
+    public function refresh_token($auth_key)
+    {
+        try
+        {
+            $keys = $this->auth_repository->new_sign_key($auth_key, $this->user->data['user_id']);
+            $response = array(
+                'status' => 200,
+                'data' => $keys,
+            );
+
+        }
+        catch (invalid_key_exception $e)
+        {
+            $response = array(
+                'status' => $e->getCode(),
+                'data' => array(
+                    'error' => $e->getMessage(),
+                ),
+            );
+        }
+
+        return new JsonResponse($response, $response['status']);
+    }
 }

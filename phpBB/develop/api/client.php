@@ -11,7 +11,7 @@
 
 class client
 {
-	protected $api_url = 'http://worldxbox.fr/forum_dev_api/app.php';
+	protected $api_url = 'http://localhost/phpbb/phpBB/app.php';
 	protected $key_store = 'keys.txt';
 
 	public function get_auth_link()
@@ -29,25 +29,45 @@ class client
 		return $this->api_url . '/api/auth/authorize/' . $response->exchange_key;
 	}
 
-	public function exchange() {
-		$keys = @file_get_contents($this->key_store);
+    public function exchange() {
+        $keys = @file_get_contents($this->key_store);
         $keyarr = explode('|', $keys);
 
-		$json = file_get_contents($this->api_url . '/api/auth/exchange_key/' . $keyarr[0]);
+        $json = file_get_contents($this->api_url . '/api/auth/exchange_key/' . $keyarr[0]);
 
         echo $json;
 
-		$response = json_decode($json);
-		$keyResp[] = $response->data->auth_key;
+        $response = json_decode($json);
+        $keyResp[] = $response->data->auth_key;
         $keyResp[] = $response->data->sign_key;
         $keyResp[] = $keyarr[2];
         $keyResp[] = $keyarr[3];
         $keys = implode('|', $keyResp);
 
-		$keys_file = fopen($this->key_store, 'w');
-		fwrite($keys_file, $keys);
-		fclose($keys_file);
-	}
+        $keys_file = fopen($this->key_store, 'w');
+        fwrite($keys_file, $keys);
+        fclose($keys_file);
+    }
+
+    public function refresh() {
+        $keys = @file_get_contents($this->key_store);
+        $keyarr = explode('|', $keys);
+
+        $json = $this->api_url . '/api/auth/refresh_token/' . $keyarr[0];
+
+        echo $json;
+
+        $response = json_decode($json);
+        $keyResp[] = $response->data->auth_key;
+        $keyResp[] = $response->data->sign_key;
+        $keyResp[] = $keyarr[2];
+        $keyResp[] = $keyarr[3];
+        $keys = implode('|', $keyResp);
+
+        $keys_file = fopen($this->key_store, 'w');
+        fwrite($keys_file, $keys);
+        fclose($keys_file);
+    }
 
 	public function verify()
 	{
